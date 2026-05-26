@@ -84,7 +84,7 @@ class BaziChart:
             "uncertainty": [
                 "八字排盘 V2 支持经度真太阳时近似校正、早晚子时 split/whole 规则、大运顺逆与三天一岁起运。",
                 "真太阳时 V2 仅按经度相对时区中央经线校正，未加入均时差；出生地经度缺省时不启用。",
-                "八字 V2 只封装排盘字段，不做旺衰、格局、用神、流年断语。",
+                "基础 bazi_chart V2 只封装排盘字段；旺衰调候由 bazi_session 的 strength_analysis/climate_analysis 提供，格局、用神仍未实现。",
             ],
         }
 

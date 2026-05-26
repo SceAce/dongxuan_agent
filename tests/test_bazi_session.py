@@ -22,6 +22,8 @@ def test_bazi_session_outputs_chart_hints_and_rule_cards(capsys):
     payload = _extract_json(capsys.readouterr().out)
 
     assert payload["calendar"]["year_gz"] == "丙戌"
+    assert payload["strength_analysis"]["day_master_strength"]["day_master"] == "辛"
+    assert payload["climate_analysis"]["season_profile"] == "子月寒水当令"
     assert payload["analysis_hints"]["target_year"] == 2025
     assert payload["analysis_hints"]["year_ganzhi"] == "乙巳"
     assert payload["rule_cards"]["mode"] == "year_event"

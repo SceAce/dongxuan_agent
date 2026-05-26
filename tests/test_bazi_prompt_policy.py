@@ -9,6 +9,9 @@ def test_bazi_prompt_requires_analysis_hints_and_rule_cards():
 
     assert "# 八字年份事件分析 Prompt" in text
     assert "没有八字盘，不做断语" in text
+    assert "strength_analysis" in text
+    assert "climate_analysis" in text
+    assert "禁止只按五行数量断强弱" in text
     assert "analysis_hints" in text
     assert "rule_cards" in text
     assert "主象" in text

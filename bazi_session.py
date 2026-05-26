@@ -8,7 +8,9 @@ from pathlib import Path
 
 from dongxuan_agent.bazi import build_bazi_chart
 from dongxuan_agent.bazi_analysis import build_year_analysis_hints
+from dongxuan_agent.bazi_climate import analyze_climate
 from dongxuan_agent.bazi_rule_cards import build_bazi_rule_context
+from dongxuan_agent.bazi_strength import analyze_strength
 
 
 PROMPT_PATHS = (
@@ -38,6 +40,9 @@ def main(argv: list[str] | None = None) -> int:
         zi_hour_rule=args.zi_hour_rule,
     )
     payload = chart.to_dict()
+    strength_analysis = analyze_strength(chart)
+    payload["strength_analysis"] = strength_analysis
+    payload["climate_analysis"] = analyze_climate(chart, strength_analysis)
     if args.target_year is not None:
         payload["analysis_hints"] = build_year_analysis_hints(chart, args.target_year)
     payload["rule_cards"] = build_bazi_rule_context(args.question, args.target_year)
