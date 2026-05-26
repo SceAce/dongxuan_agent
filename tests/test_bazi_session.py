@@ -26,6 +26,8 @@ def test_bazi_session_outputs_chart_hints_and_rule_cards(capsys):
     assert payload["climate_analysis"]["season_profile"] == "子月寒水当令"
     assert payload["analysis_hints"]["target_year"] == 2025
     assert payload["analysis_hints"]["year_ganzhi"] == "乙巳"
+    assert payload["integrated_analysis"]["luck_influence"]["ganzhi"] == "壬寅"
+    assert "财" in payload["integrated_analysis"]["integrated_analysis"]["main_axis"]
     assert payload["rule_cards"]["mode"] == "year_event"
 
 

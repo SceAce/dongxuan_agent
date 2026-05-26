@@ -11,6 +11,8 @@ def test_bazi_prompt_requires_analysis_hints_and_rule_cards():
     assert "没有八字盘，不做断语" in text
     assert "strength_analysis" in text
     assert "climate_analysis" in text
+    assert "integrated_analysis" in text
+    assert "原局定体、大运定势、流年定触发" in text
     assert "禁止只按五行数量断强弱" in text
     assert "analysis_hints" in text
     assert "rule_cards" in text
