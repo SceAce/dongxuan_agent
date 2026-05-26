@@ -9,8 +9,11 @@ from pathlib import Path
 from dongxuan_agent.bazi import build_bazi_chart
 from dongxuan_agent.bazi_analysis import build_year_analysis_hints
 from dongxuan_agent.bazi_climate import analyze_climate
+from dongxuan_agent.bazi_god import build_god_candidates
 from dongxuan_agent.bazi_integration import build_integrated_analysis
+from dongxuan_agent.bazi_luck_remedy import analyze_luck_year_remedy
 from dongxuan_agent.bazi_pattern import analyze_pattern
+from dongxuan_agent.bazi_remedy import analyze_remedy
 from dongxuan_agent.bazi_rule_cards import build_bazi_rule_context
 from dongxuan_agent.bazi_strength import analyze_strength
 
@@ -46,12 +49,29 @@ def main(argv: list[str] | None = None) -> int:
     payload["strength_analysis"] = strength_analysis
     payload["climate_analysis"] = analyze_climate(chart, strength_analysis)
     payload["pattern_analysis"] = analyze_pattern(chart)
+    payload["remedy_analysis"] = analyze_remedy(
+        payload["strength_analysis"],
+        payload["climate_analysis"],
+        payload["pattern_analysis"],
+    )
+    payload["god_candidates"] = build_god_candidates(
+        payload["remedy_analysis"],
+        payload["strength_analysis"],
+        payload["climate_analysis"],
+        payload["pattern_analysis"],
+    )
     if args.target_year is not None:
         payload["analysis_hints"] = build_year_analysis_hints(chart, args.target_year)
         payload["integrated_analysis"] = build_integrated_analysis(
             chart,
             payload["strength_analysis"],
             payload["climate_analysis"],
+            payload["analysis_hints"],
+        )
+        payload["luck_year_remedy"] = analyze_luck_year_remedy(
+            chart,
+            payload["remedy_analysis"],
+            payload["god_candidates"],
             payload["analysis_hints"],
         )
     payload["rule_cards"] = build_bazi_rule_context(args.question, args.target_year)

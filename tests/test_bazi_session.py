@@ -25,9 +25,12 @@ def test_bazi_session_outputs_chart_hints_and_rule_cards(capsys):
     assert payload["strength_analysis"]["day_master_strength"]["day_master"] == "辛"
     assert payload["climate_analysis"]["season_profile"] == "子月寒水当令"
     assert payload["pattern_analysis"]["primary_pattern"]["name"] == "食神格"
+    assert payload["remedy_analysis"]["priority"] == "调候优先"
+    assert payload["god_candidates"]["candidate_gods"][0]["element"] == "火"
     assert payload["analysis_hints"]["target_year"] == 2025
     assert payload["analysis_hints"]["year_ganzhi"] == "乙巳"
     assert payload["integrated_analysis"]["luck_influence"]["ganzhi"] == "壬寅"
+    assert payload["luck_year_remedy"]["combined_effect"] == "药病并见"
     assert "财" in payload["integrated_analysis"]["integrated_analysis"]["main_axis"]
     assert payload["rule_cards"]["mode"] == "year_event"
 
