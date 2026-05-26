@@ -35,3 +35,21 @@ def test_bazi_prompt_forbids_candidate_piling():
     assert "禁止候选清单式断法" in text
     assert "最多一个次象" in text
     assert "必须回指" in text
+
+
+def test_bazi_prompt_constrains_major_and_career_identification():
+    text = PROMPT.read_text(encoding="utf-8")
+
+    assert "专业/职业/行业识别题" in text
+    assert "抽象取象画像" in text
+    assert "知识库象义" in text
+    assert "最多两个现实落点" in text
+    assert "每个现实落点只能是一个原子专业、行业或职业方向" in text
+    assert "不得在同一个落点里用顿号、斜杠或逗号堆叠多个方向" in text
+    assert "禁止把五行、十神、干支直接等同于现实专业、行业或职业" in text
+    assert "必须先读取 `strength_analysis.element_forces.*.season_power`" in text
+    assert "不得按五行或十神出现即展开类象" in text
+    assert "symbolic_dynamics" in text
+    assert "direction_profile" in text
+    assert "knowledge_query_terms" in text
+    assert "knowledge_sources" in text

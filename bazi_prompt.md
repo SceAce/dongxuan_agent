@@ -40,6 +40,10 @@
 - 禁止只凭格局名称直接断吉凶、职业或用神；格局必须回指月令、透干、成格/扰格证据。
 - 禁止把候选用神当最终用神；必须说明候选、冲突和不确定项。
 - 禁止脱离 `imagery_analysis` 自行扩展类象；没有 evidence 的象不得输出。
+- 专业/职业/行业识别题必须先形成抽象取象画像，再给最多两个现实落点；禁止把五行、十神、干支直接等同于现实专业、行业或职业。
+- 专业/职业/行业识别题必须先读取 `strength_analysis.element_forces.*.season_power`、`effective_power`、`root_status` 和 `strength_analysis.day_master_strength.evidence`，再合 `imagery_analysis.answer_guidance.major_or_career_identification.symbolic_dynamics`、`direction_profile`、`knowledge_query_terms`、`knowledge_sources` 定象。
+- 专业/职业/行业识别题不得按五行或十神出现即展开类象；月令不得令、有效力量低、根气受损的五行只能作弱象或排除理由。
+- 专业/职业/行业识别题最多输出两个现实落点；每个现实落点只能是一个原子专业、行业或职业方向，不得在同一个落点里用顿号、斜杠或逗号堆叠多个方向。
 - 主象必须是证据最多、与用户问题最贴近的一类事件。
 - 次象只有在另一组证据稳定存在时才输出，且最多一个次象。
 - 如果候选冲突，先说明冲突，再给倾向。
@@ -58,6 +62,27 @@
 - 健康/压力：只给风险提示，看官杀、刑冲、日主受克泄耗；不做医疗诊断。
 - 迁移变化：看冲动日支、月支、年支，以及大运流年引动。
 - 人际竞争：看比劫、劫财透、比劫夺财、月柱同辈环境。
+
+## 专业/职业识别输出格式
+
+当用户问“专业是什么、读什么、职业/行业是什么、主要做什么”时，按以下格式输出。先做抽象取象画像，再从知识库象义和现实语境归纳，不能使用“五行/十神 = 现实专业”的等号映射：
+
+```markdown
+## 抽象取象画像
+
+- 五行强弱与病药：引用 `strength_analysis.element_forces.*.season_power`、`effective_power`、`root_status`，说明哪些象有力、哪些只是存在但无力。
+- 干支作用与格局：引用 `imagery_analysis.answer_guidance.major_or_career_identification.symbolic_dynamics`，说明生克泄耗、冲合刑害、月令取格、病药喜忌怎样共同塑造画像。
+- 知识库象义：引用 `imagery_analysis.answer_guidance.major_or_career_identification.knowledge_query_terms` 与 `knowledge_sources`，说明实际取用了哪些知识库术语/来源；若未检索到支持，不得自行编造。
+
+## 现实落点
+
+- 现实落点：<最多两个；每个现实落点只能是一个原子专业、行业或职业方向；必须说明它们是抽象画像的当代归纳，不是五行等号映射>
+
+## 证据
+
+- 取象收敛：引用 `direction_profile.favorable_modes`、`weak_or_unsuitable_modes`、`real_world_landing_constraints` 和 `main_image.evidence`，说明为什么现实落点与画像相符。
+- 排除理由：最多说明 1-2 个被排除方向，理由必须是月令不得令、有效力量不足、干支作用受制、病药不支持、知识库象义不支持或与问题阶段不贴合。
+```
 
 ## 输出格式
 
