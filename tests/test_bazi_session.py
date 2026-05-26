@@ -32,6 +32,8 @@ def test_bazi_session_outputs_chart_hints_and_rule_cards(capsys):
     assert payload["integrated_analysis"]["luck_influence"]["ganzhi"] == "壬寅"
     assert payload["luck_year_remedy"]["combined_effect"] == "药病并见"
     assert "财" in payload["integrated_analysis"]["integrated_analysis"]["main_axis"]
+    assert payload["imagery_analysis"]["main_image"]["evidence"]
+    assert payload["imagery_analysis"]["context_frame"]["age_stage"] == "大学/训练期"
     assert payload["rule_cards"]["mode"] == "year_event"
 
 

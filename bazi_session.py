@@ -10,6 +10,7 @@ from dongxuan_agent.bazi import build_bazi_chart
 from dongxuan_agent.bazi_analysis import build_year_analysis_hints
 from dongxuan_agent.bazi_climate import analyze_climate
 from dongxuan_agent.bazi_god import build_god_candidates
+from dongxuan_agent.bazi_imagery import build_imagery_analysis
 from dongxuan_agent.bazi_integration import build_integrated_analysis
 from dongxuan_agent.bazi_luck_remedy import analyze_luck_year_remedy
 from dongxuan_agent.bazi_pattern import analyze_pattern
@@ -76,6 +77,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     payload["rule_cards"] = build_bazi_rule_context(args.question, args.target_year)
     payload["question"] = args.question
+    payload["imagery_analysis"] = build_imagery_analysis(payload)
 
     if args.include_prompt:
         print(_prompt_path().read_text(encoding="utf-8").strip())
