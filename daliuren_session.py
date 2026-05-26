@@ -9,6 +9,7 @@ from pathlib import Path
 from dongxuan_agent.chart import build_chart
 from dongxuan_agent.divination import build_divination
 from dongxuan_agent.render import chart_to_json, divination_to_json
+from dongxuan_agent.rule_cards import build_rule_context
 
 
 PROMPT_PATHS = (
@@ -56,7 +57,9 @@ def _build_payload(args: argparse.Namespace, value: str) -> dict:
         args.birth_year is not None,
     ))
     if not needs_divination:
-        return chart_to_json(build_chart(value, timezone=args.timezone))
+        payload = chart_to_json(build_chart(value, timezone=args.timezone))
+        payload["rule_cards"] = build_rule_context(None)
+        return payload
 
     divination = build_divination(
         value,
@@ -69,7 +72,9 @@ def _build_payload(args: argparse.Namespace, value: str) -> dict:
         background=args.background,
         birth_year=args.birth_year,
     )
-    return divination_to_json(divination)
+    payload = divination_to_json(divination)
+    payload["rule_cards"] = build_rule_context(args.question)
+    return payload
 
 
 def _prompt_path() -> Path:
