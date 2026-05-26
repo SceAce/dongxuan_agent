@@ -341,6 +341,7 @@ def _landing_evidence(payload: dict) -> dict:
     data = _load_symbolic_layers()
     dynamics = _symbolic_dynamics(payload)
     active_middle = _active_middle_image_names(payload, dynamics)
+    middle_strengths = _middle_image_strengths(payload, active_middle)
     result = {"supported": [], "weakened": [], "excluded": []}
     for rule in data.get("modern_landing_rules", []):
         required = set(rule.get("requires_all", []))
@@ -354,13 +355,14 @@ def _landing_evidence(payload: dict) -> dict:
             evidence.append(f"已成立画像：{ '、'.join(sorted(required & active_middle)) }。")
         if preferred_hits:
             evidence.append(f"加强画像：{ '、'.join(preferred_hits) }。")
-        evidence.extend(_landing_specific_evidence(payload, rule["name"], active_middle))
+        evidence.extend(_landing_strength_evidence(rule, middle_strengths, active_middle))
+        weak_reasons = _landing_rule_weak_reasons(rule, middle_strengths, active_middle)
         if missing:
             evidence.append(f"缺少必要画像：{ '、'.join(missing) }。")
             status = "excluded"
-        elif _landing_weakened(payload, rule["name"]):
+        elif weak_reasons:
             status = "weakened"
-            evidence.extend(_landing_weakened_evidence(payload, rule["name"]))
+            evidence.extend(weak_reasons)
         else:
             status = "supported"
         result[status].append({
@@ -372,44 +374,108 @@ def _landing_evidence(payload: dict) -> dict:
     return result
 
 
-def _landing_specific_evidence(payload: dict, name: str, active_middle: set[str]) -> list[str]:
-    forces = (payload.get("strength_analysis") or {}).get("element_forces") or {}
-    pattern = (payload.get("pattern_analysis") or {}).get("primary_pattern") or {}
+def _landing_strength_evidence(rule: dict, middle_strengths: dict[str, dict], active_middle: set[str]) -> list[str]:
+    names = list(dict.fromkeys([*rule.get("requires_all", []), *rule.get("prefers_any", [])]))
     evidence = []
-    if name == "软件工程":
-        if "信息处理" in active_middle:
-            evidence.append("信息处理成立：水有效力或食伤格局参与，指向抽象理解、数据处理、系统思维。")
-        if "技能输出" in active_middle:
-            evidence.append(f"技能输出成立：{pattern.get('name')}指向作品、项目、训练成果。")
-    if name == "电气工程":
-        fire = forces.get("火", {})
-        evidence.append(f"火象条件：季节系数{fire.get('season_power')}，有效力{fire.get('effective_power')}，根气{fire.get('root_status')}。")
-    if name == "信息管理":
-        wood = forces.get("木", {})
-        evidence.append(f"资源经营条件：木有效力{wood.get('effective_power')}，根气{wood.get('root_status')}。")
+    for name in names:
+        if name not in active_middle:
+            continue
+        item = middle_strengths.get(name, {"score": 0, "reasons": []})
+        reason_text = "；".join(item.get("reasons", [])) or "由命盘字段合参成立"
+        evidence.append(f"{name}画像强弱：{item.get('score')}。{reason_text}。")
     return evidence
 
 
-def _landing_weakened(payload: dict, name: str) -> bool:
-    forces = (payload.get("strength_analysis") or {}).get("element_forces") or {}
-    if name == "电气工程":
-        fire = forces.get("火", {})
-        return fire.get("season_power", 0) < 0.8 or "子午冲" in "；".join(fire.get("damage_notes", []))
-    if name == "信息管理":
-        wood = forces.get("木", {})
-        return wood.get("effective_power", 0) <= 0.8 or wood.get("root_status") == "无根"
+def _landing_rule_weak_reasons(rule: dict, middle_strengths: dict[str, dict], active_middle: set[str]) -> list[str]:
+    reasons = []
+    for name in rule.get("requires_all", []):
+        item = middle_strengths.get(name, {"score": 0, "reasons": []})
+        if item.get("score", 0) < 1:
+            reasons.append(f"{rule['name']}降级：必要画像{name}强度不足，不能作为第一落点。")
+    for exclusion in rule.get("excludes_if", []):
+        if _exclusion_condition_met(exclusion, middle_strengths, active_middle):
+            reasons.append(f"{rule['name']}降级：{exclusion}。")
+    return reasons
+
+
+def _exclusion_condition_met(exclusion: str, middle_strengths: dict[str, dict], active_middle: set[str]) -> bool:
+    def score(name: str) -> float:
+        return middle_strengths.get(name, {}).get("score", 0)
+
+    if "火弱受制" in exclusion or "火弱" in exclusion:
+        return score("规则训练") < 1 or score("工程系统") > score("规则训练")
+    if "资源经营无力" in exclusion or "财弱无根" in exclusion:
+        return score("资源经营") < 1
+    if "文本表达弱于工程系统" in exclusion:
+        return score("文本表达") < score("工程系统")
+    if "人文研究缺少印星承载" in exclusion:
+        return score("人文研究") < 1
+    if "制度法理无印承载" in exclusion:
+        return score("制度法理") < 1
+    if "规则训练弱于技术项目输出" in exclusion:
+        return score("规则训练") < score("技能输出")
+    if "教育训练缺少印食配合" in exclusion:
+        return score("教育训练") < 1
+    if "表达输出弱于工程项目训练" in exclusion:
+        return score("文本表达") < max(score("工程系统"), score("技能输出"))
+    if "公共传播缺少财星外显" in exclusion or "受众连接" in exclusion:
+        return score("公共传播") < 1
+    if "表达输出被重扰" in exclusion:
+        return score("文本表达") < 1
+    if "信息处理无力" in exclusion:
+        return score("信息处理") < 1
+    if "纯资源经营强于技能输出" in exclusion:
+        return score("资源经营") > score("技能输出")
     return False
 
 
-def _landing_weakened_evidence(payload: dict, name: str) -> list[str]:
+def _middle_image_strengths(payload: dict, active_middle: set[str]) -> dict[str, dict]:
     forces = (payload.get("strength_analysis") or {}).get("element_forces") or {}
-    if name == "电气工程":
-        fire = forces.get("火", {})
-        return [f"电气工程降级：火季节系数{fire.get('season_power')}，且受{ '、'.join(fire.get('damage_notes', [])) or '无明显冲害' }影响。"]
-    if name == "信息管理":
-        wood = forces.get("木", {})
-        return [f"信息管理降级：木有效力{wood.get('effective_power')}，根气{wood.get('root_status')}，资源经营象不足。"]
-    return []
+    pattern = (payload.get("pattern_analysis") or {}).get("primary_pattern") or {}
+    remedy = payload.get("remedy_analysis") or {}
+    context = _context_frame(payload)
+    visible_ten_god = ((payload.get("analysis_hints") or {}).get("flow_year") or {}).get("stem_ten_god", "")
+    conflicts = "；".join(remedy.get("conflicts", []))
+    strengths = {}
+
+    def add(name: str, score: float, reason: str) -> None:
+        if name not in active_middle:
+            return
+        item = strengths.setdefault(name, {"score": 1.0, "reasons": []})
+        item["score"] = round(item["score"] + score, 2)
+        item["reasons"].append(reason)
+
+    water = forces.get("水", {})
+    fire = forces.get("火", {})
+    metal = forces.get("金", {})
+    earth = forces.get("土", {})
+    wood = forces.get("木", {})
+
+    add("信息处理", 0.35 if water.get("effective_power", 0) >= 1 else -0.35, f"水有效力{water.get('effective_power')}、季节系数{water.get('season_power')}")
+    add("信息处理", 0.25 if pattern.get("name") in {"食神格", "伤官格"} else 0, f"格局为{pattern.get('name')}，参与理解和输出")
+    add("技能输出", 0.45 if pattern.get("name") in {"食神格", "伤官格"} else -0.25, f"格局为{pattern.get('name')}，取作品、项目、训练成果")
+    add("技能输出", -0.15 if "劫财" in conflicts else 0, "格局受比劫扰动时，输出仍可用但稳定性下降")
+    add("工程系统", 0.45 if metal.get("effective_power", 0) >= 2 else -0.2, f"金有效力{metal.get('effective_power')}，主结构、工具、精密")
+    add("工程系统", 0.2 if earth.get("effective_power", 0) >= 1 else 0, f"土有效力{earth.get('effective_power')}，能承载体系")
+    add("规则训练", 0.2 if context["age_stage"] == "大学/训练期" else 0, f"现代阶段为{context['age_stage']}")
+    add("规则训练", -0.25 if fire.get("season_power", 0) < 0.8 else 0.15, f"火季节系数{fire.get('season_power')}，规则显化受季节影响")
+    add("规则训练", -0.2 if fire.get("damage_notes") else 0, f"火受扰：{'、'.join(fire.get('damage_notes', [])) or '无明显冲害'}")
+    add("资源经营", 0.35 if "财" in visible_ten_god else -0.2, f"流年外显十神为{visible_ten_god}")
+    add("资源经营", 0.25 if wood.get("effective_power", 0) > 0.8 else -0.45, f"木有效力{wood.get('effective_power')}、根气{wood.get('root_status')}")
+    add("文本表达", 0.3 if pattern.get("name") in {"食神格", "伤官格"} else -0.2, f"格局为{pattern.get('name')}，带表达和作品象")
+    add("文本表达", -0.3 if metal.get("effective_power", 0) >= 2 else 0, f"金有效力{metal.get('effective_power')}，结构/工程画像对纯文本表达形成竞争")
+    add("制度法理", 0.3 if metal.get("effective_power", 0) >= 2 else -0.2, f"金有效力{metal.get('effective_power')}，带边界、裁断、规范")
+    add("制度法理", -0.2 if fire.get("season_power", 0) < 0.8 or fire.get("damage_notes") else 0.1, f"火季节系数{fire.get('season_power')}，受扰：{'、'.join(fire.get('damage_notes', [])) or '无明显冲害'}")
+    add("教育训练", 0.25 if context["age_stage"] == "大学/训练期" else 0, f"现代阶段为{context['age_stage']}，学历训练语境成立")
+    add("教育训练", -0.2 if "劫财" in conflicts else 0, "比劫扰格时，知识传递象弱于技能项目输出")
+    add("公共传播", 0.25 if "财" in visible_ten_god else -0.2, f"流年外显十神为{visible_ten_god}，决定受众/目标连接")
+    add("公共传播", -0.35 if wood.get("effective_power", 0) <= 0.8 or wood.get("root_status") == "无根" else 0.15, f"木有效力{wood.get('effective_power')}、根气{wood.get('root_status')}")
+    add("人文研究", 0.25 if water.get("effective_power", 0) >= 1 else -0.2, f"水有效力{water.get('effective_power')}，带阅读、理解、阐释")
+    add("人文研究", -0.25 if metal.get("effective_power", 0) >= 2 else 0, f"金有效力{metal.get('effective_power')}，工程系统画像更强")
+
+    for name in active_middle:
+        strengths.setdefault(name, {"score": 1.0, "reasons": ["由命盘字段合参成立"]})
+    return strengths
 
 
 def _load_symbolic_layers() -> dict:
@@ -429,12 +495,20 @@ def _active_middle_image_names(payload: dict, dynamics: dict) -> set[str]:
         names.add("信息处理")
     if pattern.get("name") in {"食神格", "伤官格"}:
         names.add("技能输出")
+        names.add("文本表达")
     if forces.get("金", {}).get("effective_power", 0) >= 2 or forces.get("土", {}).get("effective_power", 0) >= 1:
         names.add("工程系统")
     if context["age_stage"] == "大学/训练期" or "官" in visible_ten_god or "印" in visible_ten_god:
         names.add("规则训练")
+        names.add("教育训练")
+    if forces.get("金", {}).get("effective_power", 0) >= 2 and (context["age_stage"] == "大学/训练期" or "官" in visible_ten_god):
+        names.add("制度法理")
     if "财" in visible_ten_god and forces.get("木", {}).get("effective_power", 0) > 0.8:
         names.add("资源经营")
+    if "财" in visible_ten_god and pattern.get("name") in {"食神格", "伤官格"}:
+        names.add("公共传播")
+    if forces.get("水", {}).get("effective_power", 0) >= 1 and context["age_stage"] == "大学/训练期":
+        names.add("人文研究")
     return names
 
 

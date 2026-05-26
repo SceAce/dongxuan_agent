@@ -102,10 +102,17 @@ def test_major_identification_converges_and_uses_season_strength():
     assert landing_evidence["weakened"]
     assert {item["name"] for item in landing_evidence["supported"]} == {"软件工程"}
     assert "电气工程" in {item["name"] for item in landing_evidence["weakened"]}
+    all_landings = {
+        item["name"]
+        for group in ("supported", "weakened", "excluded")
+        for item in landing_evidence[group]
+    }
+    assert {"汉语言文学", "法学", "教育学", "新闻传播学"} <= all_landings
     for group in ("supported", "weakened", "excluded"):
         for item in landing_evidence[group]:
             assert item["evidence"]
             assert item["status"] == group
+            assert any("画像强弱" in evidence for evidence in item["evidence"])
     assert guidance["symbolic_dynamics"]["dominant"]
     assert guidance["symbolic_dynamics"]["relations"]
     assert guidance["direction_profile"]["favorable_modes"]
