@@ -12,11 +12,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("datetime", nargs="?", help="出生时间，例如 '2026-05-26 10:14:15'；缺省为当前时间。")
     parser.add_argument("--timezone", default="Asia/Shanghai", help="时区，默认 Asia/Shanghai。")
     parser.add_argument("--gender", choices=("男", "女"), help="性别，可选。")
+    parser.add_argument("--longitude", type=float, help="出生地经度；提供后按经度近似校正真太阳时。")
+    parser.add_argument("--zi-hour-rule", choices=("whole", "split"), default="whole", help="子时规则：whole 不拆分；split 晚子换日。")
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown", help="输出格式。")
     args = parser.parse_args(argv)
 
     value = args.datetime or datetime.now().isoformat(timespec="seconds")
-    chart = build_bazi_chart(value, timezone=args.timezone, gender=args.gender)
+    chart = build_bazi_chart(
+        value,
+        timezone=args.timezone,
+        gender=args.gender,
+        longitude=args.longitude,
+        zi_hour_rule=args.zi_hour_rule,
+    )
     if args.format == "json":
         print(json.dumps(chart.to_dict(), ensure_ascii=False, indent=2))
     else:
