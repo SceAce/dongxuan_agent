@@ -17,7 +17,7 @@ def test_liuyao_cli_outputs_json_for_manual_lines(capsys):
 
     payload = json.loads(capsys.readouterr().out)
 
-    assert payload["schema"] == "liuyao_chart_v4"
+    assert payload["schema"] == "liuyao_chart_v5"
     assert payload["input"]["method"] == "manual_lines"
     assert payload["hexagram"]["moving_lines"] == [2, 5]
     assert payload["derived_lines"]
@@ -25,6 +25,8 @@ def test_liuyao_cli_outputs_json_for_manual_lines(capsys):
     assert payload["useful_god_selection"]["principle"] == "近取诸身，远取诸象"
     assert payload["question_template"]["template_id"] == "career_work"
     assert payload["six_spirits"]["scope"] == "辅助取象，不作主裁决"
+    assert payload["advanced_layers"]["enabled"] == ["spirit_roles"]
+    assert payload["completion_chain"]["mode"] == "spirit_role_completion"
 
 
 def test_liuyao_cli_outputs_json_for_named_hexagram(capsys):

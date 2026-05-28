@@ -11,7 +11,7 @@ def test_manual_chart_outputs_required_json_without_bazi_or_daliuren_fields():
         value="2026-05-28 09:30:00",
     ).to_dict()
 
-    assert chart["schema"] == "liuyao_chart_v4"
+    assert chart["schema"] == "liuyao_chart_v5"
     assert chart["input"]["method"] == "manual_lines"
     assert chart["input"]["line_order"] == "bottom_to_top"
     assert chart["calendar"]["year_gz"]
@@ -30,12 +30,20 @@ def test_manual_chart_outputs_required_json_without_bazi_or_daliuren_fields():
     assert "useful_god_selection" in chart["prompt_contract"]["must_use_fields"]
     assert "question_template" in chart["prompt_contract"]["must_use_fields"]
     assert "six_spirits" in chart["prompt_contract"]["must_use_fields"]
+    assert "spirit_role_analysis" in chart["prompt_contract"]["must_use_fields"]
+    assert "completion_chain" in chart["prompt_contract"]["must_use_fields"]
+    assert "advanced_layers" in chart["prompt_contract"]["must_use_fields"]
     assert "imagery_context" in chart
     assert "useful_god_selection" in chart
+    assert "spirit_role_analysis" in chart
+    assert "completion_chain" in chart
+    assert chart["advanced_layers"]["enabled"] == ["spirit_roles"]
+    assert "timing" in chart["advanced_layers"]["reserved"]
     assert chart["question_template"]["template_id"] == "career_work"
     assert chart["six_spirits"]["scope"] == "辅助取象，不作主裁决"
     assert chart["auxiliary_marks"]["enabled"] == []
     assert all("six_spirit" in line for line in chart["derived_lines"])
+    assert all("spirit_role" in line and "spirit_role_reason" in line for line in chart["derived_lines"])
 
     forbidden = {
         "strength_analysis",
@@ -86,7 +94,7 @@ def test_context_wraps_chart_and_hints():
         value="2026-05-28 09:30:00",
     )
 
-    assert payload["schema"] == "liuyao_chart_v4"
+    assert payload["schema"] == "liuyao_chart_v5"
     assert payload["analysis_hints"]["must_check"]
     assert payload["derived_lines"]
 

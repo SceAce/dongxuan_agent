@@ -29,9 +29,11 @@ def test_liuyao_session_outputs_prompt_and_json(capsys):
     assert "## 六爻工具上下文" in output
     assert "不得使用八字旺衰" in output
     assert "不得使用大六壬四课" in output
-    assert payload["schema"] == "liuyao_chart_v4"
+    assert payload["schema"] == "liuyao_chart_v5"
     assert payload["derived_lines"]
     assert payload["useful_god_analysis"]["candidates"]
     assert payload["useful_god_selection"]
     assert payload["question_template"]
     assert payload["six_spirits"]
+    assert payload["spirit_role_analysis"]
+    assert payload["completion_chain"]
