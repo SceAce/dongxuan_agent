@@ -15,6 +15,7 @@
         --accent: #236a58;
         --accent-2: #7a4d1d;
         --danger: #9d2f2f;
+        --dark: #101411;
       }
       * {
         box-sizing: border-box;
@@ -65,6 +66,11 @@
         border: 1px solid var(--line);
         border-radius: 8px;
         padding: 16px;
+      }
+      .result-panel {
+        background: transparent;
+        border: 0;
+        padding: 0;
       }
       .tabs {
         display: grid;
@@ -148,11 +154,75 @@
         font-size: 13px;
         line-height: 1.55;
       }
-      .analysis {
-        min-height: 180px;
-        border-bottom: 1px solid var(--line);
-        padding-bottom: 14px;
+      .result-stack {
+        display: grid;
+        gap: 12px;
         margin-bottom: 14px;
+      }
+      .result-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: linear-gradient(180deg, var(--dark) 0, #2f3831 42px, #ffffff 43px, #ffffff 100%);
+        overflow: hidden;
+      }
+      .result-card summary {
+        min-height: 42px;
+        padding: 11px 14px;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 800;
+      }
+      .result-card summary::marker {
+        color: #fff;
+      }
+      .result-body {
+        padding: 14px 16px 16px;
+        background: rgba(255, 255, 255, 0.94);
+        color: var(--ink);
+        min-height: 72px;
+      }
+      .card-context {
+        --dark: #111817;
+      }
+      .card-analysis {
+        --dark: #1a2230;
+      }
+      .card-conclusion {
+        --dark: #2d2115;
+        border-color: #c7b89d;
+      }
+      .markdown {
+        font-size: 14px;
+        line-height: 1.75;
+      }
+      .markdown p,
+      .markdown ol,
+      .markdown ul,
+      .markdown pre {
+        margin: 0 0 10px;
+      }
+      .markdown p:last-child,
+      .markdown ol:last-child,
+      .markdown ul:last-child,
+      .markdown pre:last-child {
+        margin-bottom: 0;
+      }
+      .markdown ol,
+      .markdown ul {
+        padding-left: 22px;
+      }
+      .markdown code {
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: #f4f6f3;
+        padding: 1px 4px;
+      }
+      .markdown pre {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #f4f6f3;
+        padding: 10px;
+        overflow-x: auto;
       }
       details {
         border: 1px solid var(--line);
@@ -267,12 +337,25 @@
           <button class="primary" id="submit" type="submit">开始分析</button>
         </form>
       </section>
-      <section class="panel">
+      <section class="panel result-panel">
         <div class="result-head">
           <h2>分析结果</h2>
           <span class="readonly">只读模式</span>
         </div>
-        <div class="analysis"><pre id="analysis">等待提交。</pre></div>
+        <div class="result-stack" id="analysis">
+          <details class="result-card card-context">
+            <summary>确认前置信息</summary>
+            <div class="result-body markdown">等待提交。</div>
+          </details>
+          <details class="result-card card-analysis">
+            <summary>分析</summary>
+            <div class="result-body markdown">等待提交。</div>
+          </details>
+          <details class="result-card card-conclusion" open>
+            <summary>结论</summary>
+            <div class="result-body markdown">等待提交。</div>
+          </details>
+        </div>
         <details>
           <summary>排盘 JSON</summary>
           <pre id="context"></pre>
@@ -301,7 +384,7 @@
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         submit.disabled = true;
-        analysis.textContent = "分析中...\n\n大模型会先生成编号化公开分析步骤，再给综合判断。复杂盘面可能需要 1-4 分钟。";
+        renderAnalysisCards("分析中...\n\n大模型会先生成编号化公开分析步骤，再给综合判断。复杂盘面可能需要 1-4 分钟。");
         context.textContent = "";
         try {
           const body = buildPayload();
@@ -315,10 +398,10 @@
           if (!response.ok) {
             throw new Error(data.detail || `HTTP ${response.status}`);
           }
-          analysis.textContent = data.analysis;
+          renderAnalysisCards(data.analysis);
           context.textContent = JSON.stringify(data.context, null, 2);
         } catch (error) {
-          analysis.innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`;
+          renderAnalysisCards(`## 结论\n<span class="error">${escapeHtml(error.message)}</span>`);
         } finally {
           submit.disabled = false;
         }
@@ -370,6 +453,142 @@
       function integerOrNull(value) {
         const number = numberOrNull(value);
         return Number.isFinite(number) ? Math.trunc(number) : null;
+      }
+
+      function renderAnalysisCards(markdownText) {
+        const sections = splitAnalysisSections(markdownText || "");
+        analysis.innerHTML = `
+          <details class="result-card card-context">
+            <summary>确认前置信息</summary>
+            <div class="result-body markdown">${renderMarkdown(sections.context)}</div>
+          </details>
+          <details class="result-card card-analysis">
+            <summary>分析</summary>
+            <div class="result-body markdown">${renderMarkdown(sections.analysis)}</div>
+          </details>
+          <details class="result-card card-conclusion" open>
+            <summary>结论</summary>
+            <div class="result-body markdown">${renderMarkdown(sections.conclusion)}</div>
+          </details>
+        `;
+      }
+
+      function splitAnalysisSections(text) {
+        const source = String(text || "").trim();
+        const buckets = {
+          context: "",
+          analysis: "",
+          conclusion: "",
+        };
+        let current = "conclusion";
+        const lines = source.split(/\r?\n/);
+        for (const line of lines) {
+          const heading = line.replace(/^#+\s*/, "").trim();
+          if (/^(确认前置信息|前置信息|盘面确认|输入确认)/.test(heading)) {
+            current = "context";
+            continue;
+          }
+          if (/^(分析|分析过程|证据链|推导)/.test(heading)) {
+            current = "analysis";
+            continue;
+          }
+          if (/^(结论|综合判断|最终结论)/.test(heading)) {
+            current = "conclusion";
+            continue;
+          }
+          buckets[current] += `${line}\n`;
+        }
+        if (!buckets.context.trim() && !buckets.analysis.trim() && source) {
+          const parts = source.split(/\n{2,}/);
+          buckets.context = parts.slice(0, 1).join("\n\n");
+          buckets.analysis = parts.slice(1, -1).join("\n\n");
+          buckets.conclusion = parts.slice(-1).join("\n\n");
+        }
+        return {
+          context: buckets.context.trim() || "未单独输出前置信息。",
+          analysis: buckets.analysis.trim() || "未单独输出分析过程。",
+          conclusion: buckets.conclusion.trim() || source || "暂无结论。",
+        };
+      }
+
+      function renderMarkdown(markdownText) {
+        const blocks = [];
+        const lines = String(markdownText || "").split(/\r?\n/);
+        let paragraph = [];
+        let list = null;
+        let code = [];
+        let inCode = false;
+
+        const flushParagraph = () => {
+          if (paragraph.length) {
+            blocks.push(`<p>${renderInline(paragraph.join(" "))}</p>`);
+            paragraph = [];
+          }
+        };
+        const flushList = () => {
+          if (list) {
+            blocks.push(`<${list.type}>${list.items.map((item) => `<li>${renderInline(item)}</li>`).join("")}</${list.type}>`);
+            list = null;
+          }
+        };
+
+        for (const rawLine of lines) {
+          const line = rawLine.trimEnd();
+          if (line.startsWith("```")) {
+            if (inCode) {
+              blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+              code = [];
+              inCode = false;
+            } else {
+              flushParagraph();
+              flushList();
+              inCode = true;
+            }
+            continue;
+          }
+          if (inCode) {
+            code.push(rawLine);
+            continue;
+          }
+          if (!line.trim()) {
+            flushParagraph();
+            flushList();
+            continue;
+          }
+          if (/^#{1,4}\s+/.test(line)) {
+            flushParagraph();
+            flushList();
+            const level = Math.min(line.match(/^#+/)[0].length + 2, 5);
+            blocks.push(`<h${level}>${renderInline(line.replace(/^#{1,4}\s+/, ""))}</h${level}>`);
+            continue;
+          }
+          const ordered = line.match(/^\d+[.、]\s+(.+)/);
+          const unordered = line.match(/^[-*]\s+(.+)/);
+          if (ordered || unordered) {
+            flushParagraph();
+            const type = ordered ? "ol" : "ul";
+            const item = ordered ? ordered[1] : unordered[1];
+            if (!list || list.type !== type) {
+              flushList();
+              list = { type, items: [] };
+            }
+            list.items.push(item);
+            continue;
+          }
+          paragraph.push(line.trim());
+        }
+        flushParagraph();
+        flushList();
+        if (inCode) {
+          blocks.push(`<pre><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+        }
+        return blocks.join("");
+      }
+
+      function renderInline(value) {
+        return escapeHtml(value)
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>");
       }
 
       async function parseResponse(response) {

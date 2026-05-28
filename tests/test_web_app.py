@@ -268,9 +268,26 @@ def test_llm_message_requires_numbered_public_analysis_steps():
     message = _compose_user_message(system="bazi", prompt="原始 prompt", context={"question": "问事"})
 
     assert "编号化公开分析步骤" in message
+    assert "确认前置信息" in message
+    assert "分析" in message
+    assert "结论" in message
+    assert "不要单列“不确定项”模块" in message
     assert "不要输出隐藏思维链" in message
     assert "1." in message
     assert "2." in message
+
+
+def test_frontend_renders_markdown_in_three_stacked_cards():
+    from pathlib import Path
+
+    html = Path("dongxuan_agent/web/static/index.html").read_text(encoding="utf-8")
+
+    for text in ["result-stack", "确认前置信息", "分析", "结论", "renderMarkdown", "splitAnalysisSections"]:
+        assert text in html
+    assert '<details class="result-card card-context">' in html
+    assert '<details class="result-card card-analysis">' in html
+    assert '<details class="result-card card-conclusion" open>' in html
+    assert "linear-gradient" in html
 
 
 def _json_roundtrip(value):
