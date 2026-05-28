@@ -145,7 +145,7 @@ def build_completion_chain(
         "blocking_factors": blocking,
         "mixed_factors": mixed,
         "unresolved": [
-            "应期未实现，不输出具体日期。",
+            "应期只输出地支候选，不换算公历日期。",
         ],
     }
 
