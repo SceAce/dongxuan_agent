@@ -78,7 +78,7 @@
 - 五行强弱与病药：引用 `strength_analysis.element_forces.*.season_power`、`effective_power`、`root_status`，说明哪些象有力、哪些只是存在但无力。
 - 干支作用与格局：引用 `imagery_analysis.answer_guidance.major_or_career_identification.symbolic_dynamics`，说明生克泄耗、冲合刑害、月令取格、病药喜忌怎样共同塑造画像。
 - 知识库象义：引用 `imagery_analysis.answer_guidance.major_or_career_identification.knowledge_query_terms` 与 `knowledge_sources`，说明实际取用了哪些知识库术语/来源；若未检索到支持，不得自行编造。
-- 专业族群画像：引用 `imagery_analysis.answer_guidance.major_or_career_identification.discipline_profile`，说明高分族群、是否交叉型、哪些中间画像成立，哪些画像被削弱。
+- 专业族群画像：如有 `imagery_analysis.answer_guidance.major_or_career_identification.discipline_profile`，引用其高分族群、是否交叉型、哪些中间画像成立，哪些画像被削弱；若无该字段，不得编造专业族群画像。
 
 ## 现实落点
 

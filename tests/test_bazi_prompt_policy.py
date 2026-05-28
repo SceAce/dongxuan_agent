@@ -53,6 +53,11 @@ def test_bazi_prompt_constrains_major_and_career_identification():
     assert "direction_profile" in text
     assert "knowledge_query_terms" in text
     assert "knowledge_sources" in text
+    assert (
+        "如有 `imagery_analysis.answer_guidance.major_or_career_identification.discipline_profile`"
+        in text
+    )
+    assert "若无该字段，不得编造专业族群画像" in text
 
 
 def test_bazi_prompt_constrains_model_assisted_major_landing():
