@@ -17,9 +17,11 @@ def test_liuyao_cli_outputs_json_for_manual_lines(capsys):
 
     payload = json.loads(capsys.readouterr().out)
 
-    assert payload["schema"] == "liuyao_chart_v1"
+    assert payload["schema"] == "liuyao_chart_v2"
     assert payload["input"]["method"] == "manual_lines"
     assert payload["hexagram"]["moving_lines"] == [2, 5]
+    assert payload["derived_lines"]
+    assert payload["relations"]["moving_effects"]
 
 
 def test_liuyao_cli_outputs_json_for_named_hexagram(capsys):
@@ -57,3 +59,4 @@ def test_liuyao_cli_outputs_json_for_random_lines(capsys):
 
     assert payload["input"]["method"] == "random_lines"
     assert len(payload["lines"]) == 6
+    assert payload["prompt_contract"]["output_sections"]

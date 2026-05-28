@@ -11,7 +11,7 @@ def test_manual_chart_outputs_required_json_without_bazi_or_daliuren_fields():
         value="2026-05-28 09:30:00",
     ).to_dict()
 
-    assert chart["schema"] == "liuyao_chart_v1"
+    assert chart["schema"] == "liuyao_chart_v2"
     assert chart["input"]["method"] == "manual_lines"
     assert chart["input"]["line_order"] == "bottom_to_top"
     assert chart["calendar"]["year_gz"]
@@ -22,6 +22,11 @@ def test_manual_chart_outputs_required_json_without_bazi_or_daliuren_fields():
     assert chart["lines"][1]["moving"] is True
     assert chart["question_context"]["domain"] == "事业/工作"
     assert "官鬼" in [item["six_relative"] for item in chart["question_context"]["candidate_useful_gods"]]
+    assert len(chart["derived_lines"]) == 6
+    assert chart["useful_god_analysis"]["candidates"]
+    assert chart["relations"]["month_day"]["by_line"]
+    assert chart["judgment_frame"]["mode"] == "minimal_loop"
+    assert "derived_lines" in chart["prompt_contract"]["must_use_fields"]
 
     forbidden = {
         "strength_analysis",
@@ -72,8 +77,9 @@ def test_context_wraps_chart_and_hints():
         value="2026-05-28 09:30:00",
     )
 
-    assert payload["schema"] == "liuyao_chart_v1"
+    assert payload["schema"] == "liuyao_chart_v2"
     assert payload["analysis_hints"]["must_check"]
+    assert payload["derived_lines"]
 
 
 def test_chart_requires_exactly_one_input_mode():
