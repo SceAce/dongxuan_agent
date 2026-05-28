@@ -93,14 +93,22 @@ def build_completion_chain(
     useful_god_selection: dict,
     twelve_stage_analysis: dict | None = None,
     combination_factors: dict | None = None,
+    flying_hidden_factors: dict | None = None,
 ) -> dict:
     if spirit_role_analysis["status"] != "ready":
+        supporting = []
+        blocking = []
+        mixed = []
+        if flying_hidden_factors:
+            supporting.extend(flying_hidden_factors["supporting_factors"])
+            blocking.extend(flying_hidden_factors["blocking_factors"])
+            mixed.extend(flying_hidden_factors["mixed_factors"])
         return {
             "mode": "spirit_role_completion",
             "tendency": "insufficient",
-            "supporting_factors": [],
-            "blocking_factors": [],
-            "mixed_factors": [],
+            "supporting_factors": supporting,
+            "blocking_factors": blocking,
+            "mixed_factors": mixed,
             "unresolved": list(spirit_role_analysis["unresolved"]),
         }
 
@@ -116,6 +124,10 @@ def build_completion_chain(
         supporting.extend(combination_factors["supporting_factors"])
         blocking.extend(combination_factors["blocking_factors"])
         mixed.extend(combination_factors["mixed_factors"])
+    if flying_hidden_factors:
+        supporting.extend(flying_hidden_factors["supporting_factors"])
+        blocking.extend(flying_hidden_factors["blocking_factors"])
+        mixed.extend(flying_hidden_factors["mixed_factors"])
     tendency = _tendency(supporting, blocking, mixed)
     return {
         "mode": "spirit_role_completion",
@@ -124,7 +136,6 @@ def build_completion_chain(
         "blocking_factors": blocking,
         "mixed_factors": mixed,
         "unresolved": [
-            "飞伏未实现，缺失用神不作隐藏补充。",
             "应期未实现，不输出具体日期。",
         ],
     }

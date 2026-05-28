@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 from .combinations import build_combination_analysis, completion_factors
+from .flying_hidden import (
+    attach_hidden_spirits,
+    build_flying_hidden_analysis,
+    completion_factors as flying_hidden_completion_factors,
+)
 from .imagery import build_imagery_context, build_useful_god_selection
 from .relations import branch_relation, element_relation, return_relation_label
 from .six_spirits import assign_six_spirits
@@ -20,12 +25,15 @@ def enrich_payload(payload: dict) -> dict:
     attach_twelve_stages(derived_lines)
     twelve_stage_analysis = build_twelve_stage_analysis(derived_lines)
     combination_analysis = build_combination_analysis(derived_lines, spirit_role_analysis, payload["calendar"])
+    attach_hidden_spirits(derived_lines, payload["najia"]["hidden_spirits"])
+    flying_hidden_analysis = build_flying_hidden_analysis(payload["najia"]["hidden_spirits"], spirit_role_analysis)
     completion_chain = build_completion_chain(
         derived_lines,
         spirit_role_analysis,
         useful_god_selection,
         twelve_stage_analysis,
         completion_factors(combination_analysis),
+        flying_hidden_completion_factors(flying_hidden_analysis),
     )
     six_spirits = assign_six_spirits(payload["calendar"]["day_gz"], derived_lines)
     _attach_six_spirits_to_lines(derived_lines, six_spirits)
@@ -38,6 +46,7 @@ def enrich_payload(payload: dict) -> dict:
     payload["spirit_role_analysis"] = spirit_role_analysis
     payload["twelve_stage_analysis"] = twelve_stage_analysis
     payload["combination_analysis"] = combination_analysis
+    payload["flying_hidden_analysis"] = flying_hidden_analysis
     payload["completion_chain"] = completion_chain
     payload["advanced_layers"] = advanced_layers()
     payload["six_spirits"] = six_spirits
