@@ -67,13 +67,13 @@ def create_app() -> FastAPI:
     def bazi_analyze(request: BaziAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter] = Depends(_deps)) -> dict:
         active_settings, active_adapter = deps
         _require_password(request.password, active_settings)
-        return analyze_bazi(request, active_adapter)
+        return _run_analysis(lambda: analyze_bazi(request, active_adapter))
 
     @app.post("/api/daliuren/analyze")
     def daliuren_analyze(request: DaliurenAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter] = Depends(_deps)) -> dict:
         active_settings, active_adapter = deps
         _require_password(request.password, active_settings)
-        return analyze_daliuren(request, active_adapter)
+        return _run_analysis(lambda: analyze_daliuren(request, active_adapter))
 
     if STATIC_DIR.exists():
         app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -93,6 +93,15 @@ def _deps() -> tuple[WebSettings, LLMAdapter]:
 def _require_password(password: str | None, settings: WebSettings) -> None:
     if settings.access_password and password != settings.access_password:
         raise HTTPException(status_code=401, detail="Invalid access password")
+
+
+def _run_analysis(callback):
+    try:
+        return callback()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 def _validate_question_length(value: str | None) -> str | None:

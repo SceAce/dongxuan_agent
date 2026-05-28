@@ -311,7 +311,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           });
-          const data = await response.json();
+          const data = await parseResponse(response);
           if (!response.ok) {
             throw new Error(data.detail || `HTTP ${response.status}`);
           }
@@ -370,6 +370,18 @@
       function integerOrNull(value) {
         const number = numberOrNull(value);
         return Number.isFinite(number) ? Math.trunc(number) : null;
+      }
+
+      async function parseResponse(response) {
+        const text = await response.text();
+        if (!text) {
+          return {};
+        }
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { detail: text.slice(0, 500) };
+        }
       }
 
       function escapeHtml(value) {

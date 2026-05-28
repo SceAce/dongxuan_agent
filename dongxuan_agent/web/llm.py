@@ -43,9 +43,16 @@ class OpenAILLMAdapter(LLMAdapter):
             json={"model": self._model, "messages": messages, "temperature": 0.2},
             timeout=self._timeout,
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            detail = _extract_error_detail(response)
+            raise RuntimeError(f"模型接口返回 {response.status_code}: {detail}") from exc
         data = response.json()
-        return data["choices"][0]["message"]["content"]
+        try:
+            return data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("模型接口响应格式不符合 OpenAI chat completions") from exc
 
 
 def build_llm_adapter(settings: WebSettings) -> LLMAdapter:
@@ -68,3 +75,20 @@ def _compose_user_message(*, system: str, prompt: str, context: dict) -> str:
         f"{json.dumps(context, ensure_ascii=False, indent=2)}\n"
         "```"
     )
+
+
+def _extract_error_detail(response: httpx.Response) -> str:
+    try:
+        data = response.json()
+    except ValueError:
+        return response.text[:500]
+    if isinstance(data, dict):
+        error = data.get("error")
+        if isinstance(error, dict):
+            message = error.get("message")
+            if isinstance(message, str):
+                return message
+        detail = data.get("detail")
+        if isinstance(detail, str):
+            return detail
+    return response.text[:500]

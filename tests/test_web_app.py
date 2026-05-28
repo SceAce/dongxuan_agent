@@ -151,6 +151,24 @@ def test_no_shell_or_codex_endpoint_is_exposed(monkeypatch):
         assert client.post(path, json={}).status_code == 404
 
 
+def test_model_errors_are_returned_as_json(monkeypatch):
+    monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
+    import dongxuan_agent.web.app as web_app
+    from fastapi.testclient import TestClient
+
+    def broken_analyze_bazi(request, adapter):
+        raise RuntimeError("模型接口返回 401，请检查 OPENAI_API_KEY")
+
+    monkeypatch.setattr(web_app, "analyze_bazi", broken_analyze_bazi)
+
+    client = TestClient(web_app.create_app())
+    response = client.post("/api/bazi/analyze", json={"datetime": "2006-12-18 12:30:00"})
+
+    assert response.status_code == 502
+    assert response.headers["content-type"].startswith("application/json")
+    assert response.json()["detail"] == "模型接口返回 401，请检查 OPENAI_API_KEY"
+
+
 def test_settings_can_read_openai_key_and_base_url_from_codex_auth_file(tmp_path, monkeypatch):
     auth_path = tmp_path / "auth.json"
     auth_path.write_text(
