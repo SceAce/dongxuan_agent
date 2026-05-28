@@ -1,0 +1,16 @@
+services:
+  dongxuan-web:
+    build: .
+    ports:
+      - "${DONGXUAN_WEB_PORT:-8000}:8000"
+    environment:
+      DONGXUAN_LLM_PROVIDER: "${DONGXUAN_LLM_PROVIDER:-echo}"
+      DONGXUAN_ACCESS_PASSWORD: "${DONGXUAN_ACCESS_PASSWORD:-}"
+      DONGXUAN_MAX_QUESTION_LENGTH: "${DONGXUAN_MAX_QUESTION_LENGTH:-2000}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4.1-mini}"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true

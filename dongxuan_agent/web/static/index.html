@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>东玄只读测算</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7f4;
+        --panel: #ffffff;
+        --ink: #18201b;
+        --muted: #667266;
+        --line: #d9dfd6;
+        --accent: #236a58;
+        --accent-2: #7a4d1d;
+        --danger: #9d2f2f;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0;
+      }
+      header {
+        border-bottom: 1px solid var(--line);
+        background: #eef2ea;
+      }
+      .wrap {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .status {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      main {
+        padding: 22px 0 32px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+      }
+      .tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      button {
+        border: 1px solid var(--line);
+        background: #f8faf7;
+        color: var(--ink);
+        border-radius: 6px;
+        min-height: 38px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button.active,
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+      form {
+        display: grid;
+        gap: 12px;
+      }
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        min-height: 38px;
+        padding: 8px 10px;
+      }
+      textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .hidden {
+        display: none;
+      }
+      .result-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .readonly {
+        color: var(--accent-2);
+        font-size: 13px;
+      }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .analysis {
+        min-height: 180px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 14px;
+        margin-bottom: 14px;
+      }
+      details {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px;
+        background: #fbfcfa;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+      }
+      .error {
+        color: var(--danger);
+      }
+      @media (max-width: 820px) {
+        .grid,
+        .row {
+          grid-template-columns: 1fr;
+        }
+        .top {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap top">
+        <h1>东玄只读测算</h1>
+        <div class="status" id="health">检查服务中...</div>
+      </div>
+    </header>
+    <main class="wrap grid">
+      <section class="panel">
+        <div class="tabs">
+          <button id="tab-bazi" class="active" type="button">八字</button>
+          <button id="tab-daliuren" type="button">大六壬</button>
+        </div>
+        <form id="form">
+          <label>
+            访问密码
+            <input name="password" type="password" autocomplete="current-password" />
+          </label>
+          <label>
+            时间
+            <input name="datetime" value="2006-12-18 12:30:00" />
+          </label>
+          <label>
+            时区
+            <input name="timezone" value="Asia/Shanghai" />
+          </label>
+          <div class="row">
+            <label>
+              性别
+              <select name="gender">
+                <option value="">未提供</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+            </label>
+            <label class="bazi-only">
+              子时规则
+              <select name="zi_hour_rule">
+                <option value="whole">whole</option>
+                <option value="split">split</option>
+              </select>
+            </label>
+          </div>
+          <div class="row bazi-only">
+            <label>
+              经度
+              <input name="longitude" type="number" step="0.0001" />
+            </label>
+            <label>
+              目标年份
+              <input name="target_year" type="number" />
+            </label>
+          </div>
+          <div class="row daliuren-only hidden">
+            <label>
+              起课方式
+              <select name="mode">
+                <option value="time">time</option>
+                <option value="live-hour">live-hour</option>
+                <option value="number">number</option>
+              </select>
+            </label>
+            <label>
+              报数
+              <input name="number" type="number" />
+            </label>
+          </div>
+          <div class="row daliuren-only hidden">
+            <label>
+              活时地支
+              <input name="hour_branch" />
+            </label>
+            <label>
+              出生年份
+              <input name="birth_year" type="number" />
+            </label>
+          </div>
+          <label class="daliuren-only hidden">
+            当前背景
+            <textarea name="background"></textarea>
+          </label>
+          <label>
+            问题
+            <textarea name="question">推断2025年发生了什么</textarea>
+          </label>
+          <button class="primary" id="submit" type="submit">开始分析</button>
+        </form>
+      </section>
+      <section class="panel">
+        <div class="result-head">
+          <h2>分析结果</h2>
+          <span class="readonly">只读模式</span>
+        </div>
+        <div class="analysis"><pre id="analysis">等待提交。</pre></div>
+        <details>
+          <summary>排盘 JSON</summary>
+          <pre id="context"></pre>
+        </details>
+      </section>
+    </main>
+    <script>
+      const state = { system: "bazi" };
+      const form = document.querySelector("#form");
+      const submit = document.querySelector("#submit");
+      const analysis = document.querySelector("#analysis");
+      const context = document.querySelector("#context");
+
+      document.querySelector("#tab-bazi").addEventListener("click", () => switchSystem("bazi"));
+      document.querySelector("#tab-daliuren").addEventListener("click", () => switchSystem("daliuren"));
+
+      fetch("/api/health")
+        .then((r) => r.json())
+        .then((data) => {
+          document.querySelector("#health").textContent = `${data.status} / ${data.systems.join("、")} / readonly`;
+        })
+        .catch(() => {
+          document.querySelector("#health").textContent = "服务不可用";
+        });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        submit.disabled = true;
+        analysis.textContent = "分析中...";
+        context.textContent = "";
+        try {
+          const body = buildPayload();
+          const endpoint = state.system === "bazi" ? "/api/bazi/analyze" : "/api/daliuren/analyze";
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || `HTTP ${response.status}`);
+          }
+          analysis.textContent = data.analysis;
+          context.textContent = JSON.stringify(data.context, null, 2);
+        } catch (error) {
+          analysis.innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`;
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      function switchSystem(system) {
+        state.system = system;
+        document.querySelector("#tab-bazi").classList.toggle("active", system === "bazi");
+        document.querySelector("#tab-daliuren").classList.toggle("active", system === "daliuren");
+        document.querySelectorAll(".bazi-only").forEach((el) => el.classList.toggle("hidden", system !== "bazi"));
+        document.querySelectorAll(".daliuren-only").forEach((el) => el.classList.toggle("hidden", system !== "daliuren"));
+        form.datetime.value = system === "bazi" ? "2006-12-18 12:30:00" : "2026-05-28 20:00:00";
+        form.question.value = system === "bazi" ? "推断2025年发生了什么" : "问工作进展";
+      }
+
+      function buildPayload() {
+        const data = Object.fromEntries(new FormData(form).entries());
+        const payload = {
+          password: emptyToNull(data.password),
+          datetime: data.datetime,
+          timezone: data.timezone,
+          gender: emptyToNull(data.gender),
+          question: emptyToNull(data.question),
+        };
+        if (state.system === "bazi") {
+          payload.longitude = numberOrNull(data.longitude);
+          payload.zi_hour_rule = data.zi_hour_rule || "whole";
+          payload.target_year = integerOrNull(data.target_year);
+        } else {
+          payload.mode = data.mode || "time";
+          payload.hour_branch = emptyToNull(data.hour_branch);
+          payload.number = integerOrNull(data.number);
+          payload.background = emptyToNull(data.background);
+          payload.birth_year = integerOrNull(data.birth_year);
+        }
+        return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== null));
+      }
+
+      function emptyToNull(value) {
+        const trimmed = String(value || "").trim();
+        return trimmed ? trimmed : null;
+      }
+
+      function numberOrNull(value) {
+        const trimmed = String(value || "").trim();
+        return trimmed ? Number(trimmed) : null;
+      }
+
+      function integerOrNull(value) {
+        const number = numberOrNull(value);
+        return Number.isFinite(number) ? Math.trunc(number) : null;
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        }[char]));
+      }
+    </script>
+  </body>
+</html>
