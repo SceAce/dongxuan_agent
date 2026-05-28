@@ -7,11 +7,14 @@
 - JSON 是唯一排盘来源。
 - 必须优先使用 `derived_lines`，再回看 `lines`、`najia`、`palace`。
 - 必须使用 `useful_god_analysis` 定位候选用神落在哪些具体爻。
+- 必须使用 `useful_god_selection` 作为用神选择与冲突分层的最高依据。
 - 必须使用 `relations.month_day` 判断月令、日辰对各爻的作用。
 - 必须使用 `relations.shi_ying` 判断世应关系。
 - 必须使用 `relations.moving_effects` 判断动爻、变爻、回头生克。
 - 不得改变本卦、变卦、动爻、爻序、纳甲、六亲、卦宫、世爻、应爻。
 - 不得把候选用神直接当作最终用神；只能在已实现字段内说明倾向。
+- 遇到 `selection_result.status = layered` 时，必须分层解释，不能强行压成单一用神。
+- 遇到 `selection_result.status = ambiguous` 时，必须保留不确定或要求补充问题语境。
 - 不得把旺直接视为吉。
 - 不得把死直接视为凶。
 - 不得使用八字旺衰、格局、调候、病药、大运流年等逻辑。
@@ -24,7 +27,7 @@
 严格依照 `judgment_frame.steps`：
 
 1. 先确认问题领域和候选用神。
-2. 再把候选用神落到具体爻位。
+2. 再依据 `useful_god_selection` 按“近取诸身，远取诸象”定位主轴与辅助轴。
 3. 检查世应关系。
 4. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
 5. 检查动变作用：动爻对世、应、候选用神的作用，以及变爻回头生克。
@@ -45,13 +48,23 @@
 
 ## 用神定位
 
-依据 `useful_god_analysis` 说明：
+必须同时依据 `useful_god_analysis` 与 `useful_god_selection` 说明：
 
 - 问题领域。
 - 主候选与辅助候选。
 - 候选用神落在哪些爻。
 - 是否有候选用神缺失。
 - 候选用神仍未自动定为最终用神。
+
+用神选择必须遵守：
+
+- `近取诸身`：先看 `useful_god_selection.near_self_focus`，说明世爻、持世六亲、求测人自身承接力。
+- `远取诸象`：再看 `useful_god_selection.far_symbol_focus`，说明职位、合同、钱财、疾病、对方等外部取象。
+- 若 `selection_result.status = selected`，说明主用神和证据。
+- 若 `selection_result.status = layered`，分别说明主轴、辅助轴和 `conflicts`，不能强行压成单一用神。
+- 若 `selection_result.status = ambiguous`，说明为何冲突未能裁决，不得自行改用神。
+- 若 `selection_result.status = missing`，说明相关六亲缺失；伏神未实现时不得编造隐藏用神。
+- 冲突不是错误。冲突应作为信息本身进入推断，例如官鬼看岗位/规则，父母看合同/通知。
 
 ## 世应关系
 
