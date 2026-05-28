@@ -205,5 +205,18 @@ def test_environment_openai_settings_override_codex_auth_file(tmp_path, monkeypa
     assert settings.openai_base_url == "https://env.example/v1"
 
 
+def test_default_auth_path_is_project_local(monkeypatch):
+    monkeypatch.delenv("DONGXUAN_CODEX_AUTH_PATH", raising=False)
+
+    from dongxuan_agent.web.config import _candidate_auth_paths
+
+    paths = _candidate_auth_paths()
+
+    assert len(paths) == 1
+    assert paths[0].name == "auth.json"
+    assert paths[0].parent.name == ".dongxuan"
+    assert ".codex" not in str(paths[0])
+
+
 def _json_roundtrip(value):
     return json.loads(json.dumps(value, ensure_ascii=False))

@@ -5,6 +5,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 
 @dataclass(frozen=True)
 class WebSettings:
@@ -50,12 +52,7 @@ def _candidate_auth_paths() -> list[Path]:
     explicit = _blank_to_none(os.getenv("DONGXUAN_CODEX_AUTH_PATH"))
     if explicit:
         return [Path(explicit).expanduser()]
-    codex_dir = Path.home() / ".codex"
-    return [
-        codex_dir / "atuo.json",
-        codex_dir / "auto.json",
-        codex_dir / "auth.json",
-    ]
+    return [PROJECT_ROOT / ".dongxuan" / "auth.json"]
 
 
 def _auth_value(data: dict, *keys: str) -> str | None:
