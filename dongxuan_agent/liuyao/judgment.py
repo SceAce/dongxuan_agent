@@ -3,6 +3,7 @@ from __future__ import annotations
 from .imagery import build_imagery_context, build_useful_god_selection
 from .relations import branch_relation, element_relation, return_relation_label
 from .six_spirits import assign_six_spirits
+from .spirit_roles import advanced_layers, build_completion_chain, build_spirit_role_analysis
 from .strength import BRANCH_ELEMENTS, effective_strength, extreme_state, seasonal_state
 from .templates import build_question_template
 
@@ -13,6 +14,8 @@ def enrich_payload(payload: dict) -> dict:
     useful_gods = build_useful_god_analysis(payload, derived_lines)
     imagery_context = build_imagery_context(payload["input"]["question"], useful_gods["domain"])
     useful_god_selection = build_useful_god_selection(payload, derived_lines, useful_gods, imagery_context, question_template)
+    spirit_role_analysis = build_spirit_role_analysis(derived_lines, useful_god_selection)
+    completion_chain = build_completion_chain(derived_lines, spirit_role_analysis, useful_god_selection)
     six_spirits = assign_six_spirits(payload["calendar"]["day_gz"], derived_lines)
     _attach_six_spirits_to_lines(derived_lines, six_spirits)
     relations = build_relations(payload, derived_lines, useful_gods)
@@ -21,6 +24,9 @@ def enrich_payload(payload: dict) -> dict:
     payload["useful_god_analysis"] = useful_gods
     payload["imagery_context"] = imagery_context
     payload["useful_god_selection"] = useful_god_selection
+    payload["spirit_role_analysis"] = spirit_role_analysis
+    payload["completion_chain"] = completion_chain
+    payload["advanced_layers"] = advanced_layers()
     payload["six_spirits"] = six_spirits
     payload["auxiliary_marks"] = auxiliary_marks()
     payload["relations"] = relations
@@ -158,6 +164,9 @@ def prompt_contract() -> dict:
             "derived_lines",
             "useful_god_analysis",
             "useful_god_selection",
+            "spirit_role_analysis",
+            "completion_chain",
+            "advanced_layers",
             "question_template",
             "six_spirits",
             "relations",
