@@ -22,6 +22,7 @@ class OpenAILLMAdapter(LLMAdapter):
         if not settings.openai_api_key:
             raise RuntimeError("OPENAI_API_KEY is required when DONGXUAN_LLM_PROVIDER=openai")
         self._api_key = settings.openai_api_key
+        self._base_url = settings.openai_base_url.rstrip("/")
         self._model = settings.openai_model
         self._timeout = settings.request_timeout_seconds
 
@@ -37,7 +38,7 @@ class OpenAILLMAdapter(LLMAdapter):
             },
         ]
         response = httpx.post(
-            "https://api.openai.com/v1/chat/completions",
+            f"{self._base_url}/chat/completions",
             headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
             json={"model": self._model, "messages": messages, "temperature": 0.2},
             timeout=self._timeout,

@@ -151,5 +151,41 @@ def test_no_shell_or_codex_endpoint_is_exposed(monkeypatch):
         assert client.post(path, json={}).status_code == 404
 
 
+def test_settings_can_read_openai_key_and_base_url_from_codex_auth_file(tmp_path, monkeypatch):
+    auth_path = tmp_path / "auth.json"
+    auth_path.write_text(
+        '{"OPENAI_API_KEY": "sk-test-from-file", "OPENAI_BASE_URL": "https://example.test/v1"}',
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.setenv("DONGXUAN_CODEX_AUTH_PATH", str(auth_path))
+
+    from dongxuan_agent.web.config import load_settings
+
+    settings = load_settings()
+
+    assert settings.openai_api_key == "sk-test-from-file"
+    assert settings.openai_base_url == "https://example.test/v1"
+
+
+def test_environment_openai_settings_override_codex_auth_file(tmp_path, monkeypatch):
+    auth_path = tmp_path / "auth.json"
+    auth_path.write_text(
+        '{"OPENAI_API_KEY": "sk-test-from-file", "OPENAI_BASE_URL": "https://example.test/v1"}',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("DONGXUAN_CODEX_AUTH_PATH", str(auth_path))
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-from-env")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://env.example/v1")
+
+    from dongxuan_agent.web.config import load_settings
+
+    settings = load_settings()
+
+    assert settings.openai_api_key == "sk-test-from-env"
+    assert settings.openai_base_url == "https://env.example/v1"
+
+
 def _json_roundtrip(value):
     return json.loads(json.dumps(value, ensure_ascii=False))
