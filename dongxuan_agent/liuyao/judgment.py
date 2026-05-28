@@ -165,7 +165,7 @@ def build_useful_god_analysis(payload: dict, derived_lines: list[dict]) -> dict:
         "candidates": candidates,
         "missing_candidates": missing,
         "unresolved": [
-            "MVP 只定位候选用神，不自动定最终用神",
+            "候选用神不等于最终用神；必须结合用神选择、原忌仇链、世应、月日、动变和已启用高级层裁决。",
         ],
     }
 
@@ -194,7 +194,7 @@ def judgment_frame(has_moving_lines: bool) -> dict:
         ],
         "stop_conditions": [
             "关键字段缺失时，不得继续自由推断",
-            "候选用神缺失且伏神未实现时，只能标记为未决",
+            "候选用神缺失且 flying_hidden_analysis 无对应伏神时，只能标记为未决",
         ],
     }
 
@@ -465,7 +465,7 @@ def _changed_line_relation(payload: dict, actor: dict) -> dict:
 
 
 def _changed_branch(original_branch: str, changed_bit: str) -> str:
-    # MVP keeps changed-line branch explicit and deterministic without full changed-hexagram najia remapping.
+    # Keep changed-line branch explicit and deterministic without full changed-hexagram najia remapping.
     # Yang changes use the next branch, yin changes use the previous branch in the terrestrial sequence.
     branches = list(BRANCH_ELEMENTS)
     index = branches.index(original_branch)

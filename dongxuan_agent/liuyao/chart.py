@@ -57,7 +57,8 @@ class LiuyaoChart:
             "question_context": classify_question(self.question),
             "analysis_hints": _analysis_hints(moving_lines, self.lines, palace),
             "uncertainty": [
-                "六爻 MVP 只生成排盘结构和候选检查项，不做最终吉凶、应期或用神定夺。",
+                "六爻工具输出结构化证据与候选倾向；最终表述必须遵守 prompt_contract 和 advanced_layers。",
+                "应期只输出地支候选触发点，不换算公历日期。",
             ],
         }
         return enrich_payload(payload)

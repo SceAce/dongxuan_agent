@@ -33,7 +33,7 @@ def build_spirit_role_analysis(derived_lines: list[dict], useful_god_selection: 
     useful_lines = [line for line in derived_lines if line["six_relative"] == main]
     useful_elements = sorted({line["element"] for line in useful_lines})
     if not useful_lines:
-        _mark_unresolved(derived_lines, "主用神不上卦，飞伏未实现前不补隐藏用神。")
+        _mark_unresolved(derived_lines, "主用神不上卦，待 flying_hidden_analysis 判断是否有对应伏神。")
         return {
             "status": "missing",
             "main_useful_god": main,
@@ -41,7 +41,7 @@ def build_spirit_role_analysis(derived_lines: list[dict], useful_god_selection: 
             "useful_god_elements": [],
             "role_elements": {},
             "by_line": [],
-            "unresolved": ["主用神不上卦，飞伏未实现前不补隐藏用神。"],
+            "unresolved": ["主用神不上卦，待 flying_hidden_analysis 判断是否有对应伏神。"],
         }
     if len(useful_elements) > 1:
         _mark_unresolved(derived_lines, "主用神多现且五行不同，暂不强行合并原忌仇神。")
