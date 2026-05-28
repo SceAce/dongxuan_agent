@@ -11,7 +11,7 @@ def test_manual_chart_outputs_required_json_without_bazi_or_daliuren_fields():
         value="2026-05-28 09:30:00",
     ).to_dict()
 
-    assert chart["schema"] == "liuyao_chart_v10"
+    assert chart["schema"] == "liuyao_chart_v11"
     assert chart["input"]["method"] == "manual_lines"
     assert chart["input"]["line_order"] == "bottom_to_top"
     assert chart["calendar"]["year_gz"]
@@ -36,6 +36,7 @@ def test_manual_chart_outputs_required_json_without_bazi_or_daliuren_fields():
     assert "flying_hidden_analysis" in chart["prompt_contract"]["must_use_fields"]
     assert "advance_retreat_analysis" in chart["prompt_contract"]["must_use_fields"]
     assert "timing_analysis" in chart["prompt_contract"]["must_use_fields"]
+    assert "spirit_sha_analysis" in chart["prompt_contract"]["must_use_fields"]
     assert "completion_chain" in chart["prompt_contract"]["must_use_fields"]
     assert "advanced_layers" in chart["prompt_contract"]["must_use_fields"]
     assert "imagery_context" in chart
@@ -46,19 +47,22 @@ def test_manual_chart_outputs_required_json_without_bazi_or_daliuren_fields():
     assert "flying_hidden_analysis" in chart
     assert "advance_retreat_analysis" in chart
     assert "timing_analysis" in chart
+    assert "spirit_sha_analysis" in chart
     assert "completion_chain" in chart
-    assert chart["advanced_layers"]["enabled"] == ["spirit_roles", "twelve_stages", "three_combination", "flying_hidden", "advance_retreat", "timing"]
+    assert chart["advanced_layers"]["enabled"] == ["spirit_roles", "twelve_stages", "three_combination", "flying_hidden", "advance_retreat", "timing", "spirit_sha"]
     assert chart["twelve_stage_analysis"]["enabled"] is True
     assert chart["combination_analysis"]["enabled"] is True
     assert chart["flying_hidden_analysis"]["enabled"] is True
     assert chart["advance_retreat_analysis"]["enabled"] is True
     assert chart["timing_analysis"]["enabled"] is True
+    assert chart["spirit_sha_analysis"]["enabled"] is True
     assert "flying_hidden" not in chart["advanced_layers"]["reserved"]
     assert "advance_retreat" not in chart["advanced_layers"]["reserved"]
     assert "timing" not in chart["advanced_layers"]["reserved"]
+    assert "spirit_sha" not in chart["advanced_layers"]["reserved"]
     assert chart["question_template"]["template_id"] == "career_work"
     assert chart["six_spirits"]["scope"] == "辅助取象，不作主裁决"
-    assert chart["auxiliary_marks"]["enabled"] == []
+    assert chart["auxiliary_marks"]["enabled"] == ["天乙贵人", "驿马", "桃花"]
     assert all("six_spirit" in line for line in chart["derived_lines"])
     assert all("spirit_role" in line and "spirit_role_reason" in line for line in chart["derived_lines"])
     assert all("twelve_stage" in line for line in chart["derived_lines"])
@@ -112,7 +116,7 @@ def test_context_wraps_chart_and_hints():
         value="2026-05-28 09:30:00",
     )
 
-    assert payload["schema"] == "liuyao_chart_v10"
+    assert payload["schema"] == "liuyao_chart_v11"
     assert payload["analysis_hints"]["must_check"]
     assert payload["derived_lines"]
 

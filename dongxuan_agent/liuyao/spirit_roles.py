@@ -152,10 +152,8 @@ def build_completion_chain(
 
 def advanced_layers() -> dict:
     return {
-        "enabled": ["spirit_roles", "twelve_stages", "three_combination", "flying_hidden", "advance_retreat", "timing"],
-        "reserved": [
-            "spirit_sha",
-        ],
+        "enabled": ["spirit_roles", "twelve_stages", "three_combination", "flying_hidden", "advance_retreat", "timing", "spirit_sha"],
+        "reserved": [],
         "order": [
             "spirit_roles",
             "twelve_stages",

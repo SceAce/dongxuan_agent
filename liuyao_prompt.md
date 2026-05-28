@@ -15,6 +15,7 @@
 - 若 `flying_hidden` 在 `advanced_layers.enabled` 中，必须使用 `flying_hidden_analysis`，且飞伏必须限于 `najia.hidden_spirits` 已给出的伏神；不得编造伏神。
 - 若 `advance_retreat` 在 `advanced_layers.enabled` 中，必须使用 `advance_retreat_analysis`，且进退神必须按 spirit_role 和 role_impact 解释。
 - 若 `timing` 在 `advanced_layers.enabled` 中，必须使用 `timing_analysis`，且应期只能作为地支候选触发点，不得换算公历日期。
+- 若 `spirit_sha` 在 `advanced_layers.enabled` 中，必须使用 `spirit_sha_analysis`，且神煞只作辅助取象与旁证，不得单凭神煞定成败。
 - 必须使用 `completion_chain` 作为成事、阻断、反复或证据不足的主证据层。
 - 必须遵守 `advanced_layers.order`；只有 advanced_layers.enabled 中的层可以作为证据。
 - 必须使用 `six_spirits` 作为具体爻上的辅助取象，不作主裁决。
@@ -29,7 +30,7 @@
 - 不得把死直接视为凶。
 - 不得说“青龙必吉”、“白虎必凶”、“玄武必欺瞒”，也不得作等价的单因六神断语。
 - 不得单凭六神定成败；不能单凭青龙断吉，不能单凭白虎断凶，不能单凭玄武断欺瞒。
-- 若 `auxiliary_marks.enabled` 为空，表示神煞未实现；不得在 prompt 中编造命中。
+- 神煞只允许引用 `spirit_sha_analysis` 与 `auxiliary_marks.enabled` 中已实现的天乙贵人、驿马、桃花；不得编造其他神煞命中。
 - 若 `timing` 不在 `advanced_layers.enabled` 中，不得输出应期；若已启用，也只能引用 `timing_analysis.candidates` 输出应期候选，不得输出具体公历日期、月份或年份。
 - 若 `flying_hidden` 不在 `advanced_layers.enabled` 中，不得使用飞伏补隐藏用神；若已启用，也只能引用 `flying_hidden_analysis` 和 `najia.hidden_spirits`，不得编造伏神。
 - 若 `three_combination` 不在 `advanced_layers.enabled` 中，不得使用三合局作证据；若已启用，不得单凭三合断吉凶。
@@ -37,7 +38,7 @@
 - 若 `advance_retreat` 不在 `advanced_layers.enabled` 中，不得使用进退神作证据；若已启用，也只能引用 `advance_retreat_analysis`，不得自行扩展进退规则。
 - 不得使用八字旺衰、格局、调候、病药、大运流年等逻辑。
 - 不得使用大六壬四课三传、天将或大六壬神煞命中逻辑。
-- 不得自行补充未实现的墓绝长生、神煞命中；不得自行补充 `najia.hidden_spirits` 之外的飞伏，不得自行补充 `advance_retreat_analysis` 之外的进退神，不得自行补充 `timing_analysis.candidates` 之外的应期候选。
+- 不得自行补充未实现的墓绝长生；不得自行补充 `najia.hidden_spirits` 之外的飞伏，不得自行补充 `advance_retreat_analysis` 之外的进退神，不得自行补充 `timing_analysis.candidates` 之外的应期候选，不得自行补充 `spirit_sha_analysis` 之外的神煞。
 - 如果 JSON 缺少字段，要标记为不确定，不得编造规则结果。
 
 ## 推算顺序
@@ -56,7 +57,7 @@
 10. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
 11. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
 12. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
-13. 最后把 `six_spirits` 作为爻象呈现方式补充，不能覆盖前面证据。
+13. 最后把 `six_spirits` 与 `spirit_sha_analysis` 作为爻象呈现方式补充，不能覆盖前面证据。
 14. 只输出综合倾向、证据和不确定项。
 
 `综合倾向` 只能使用：
@@ -159,6 +160,17 @@
 - 不得换算公历日期，不得输出具体年月日。
 - 若 `timing_analysis.unresolved` 提示不换算公历日期，必须保留这个限制。
 
+## 神煞
+
+依据 `spirit_sha_analysis` 说明：
+
+- 只允许使用天乙贵人、驿马、桃花三个已实现神煞。
+- 天乙贵人只作贵人、扶助、转圜旁证。
+- 驿马只作行动、变动、远行、消息流动旁证。
+- 桃花只作吸引、人缘、情感、审美旁证。
+- 神煞只作辅助，不得单凭神煞定成败。
+- 神煞必须落到具体爻位、六亲、spirit_role 和主证据链中解释。
+
 ## 综合倾向
 
 只能在已实现字段内合成倾向：
@@ -178,7 +190,7 @@
 - 六神已实现为辅助取象，不作主裁决。
 - 神煞只保留 `auxiliary_marks` 预留字段；若 `auxiliary_marks.enabled` 为空，不得编造驿马、桃花、贵人等命中。
 - `advanced_layers.reserved` 中的层不能作为证据。
-- 神煞未实现；不得编造神煞命中。
+- 神煞仅实现天乙贵人、驿马、桃花；不得编造其他神煞命中。
 - 应期只实现地支候选，不换算公历日期。
 - 若候选用神缺失且 `flying_hidden_analysis.hidden_lines` 也无对应伏神，只能标记未决。
 - 若证据互相冲突，应保留为反复/未定。

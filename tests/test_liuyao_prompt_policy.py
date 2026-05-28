@@ -28,7 +28,7 @@ def test_liuyao_prompt_requires_templates_and_six_spirits_as_auxiliary_only():
         assert text in PROMPT
     assert "不能单凭青龙断吉" in PROMPT
     assert "不能单凭白虎断凶" in PROMPT
-    assert "不得在 prompt 中编造命中" in PROMPT
+    assert "不得编造其他神煞命中" in PROMPT
 
 
 def test_liuyao_prompt_requires_spirit_roles_and_advanced_layer_order():
@@ -69,3 +69,9 @@ def test_liuyao_prompt_requires_role_aware_advance_retreat():
 def test_liuyao_prompt_requires_bounded_timing_candidates():
     for text in ["timing_analysis", "应期候选", "地支候选", "不得换算公历日期"]:
         assert text in PROMPT
+
+
+def test_liuyao_prompt_requires_auxiliary_spirit_sha():
+    for text in ["spirit_sha_analysis", "天乙贵人", "驿马", "桃花", "神煞只作辅助"]:
+        assert text in PROMPT
+    assert "不得单凭神煞定成败" in PROMPT
