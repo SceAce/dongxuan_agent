@@ -189,6 +189,7 @@ def prompt_contract() -> dict:
             "spirit_role_analysis",
             "twelve_stage_analysis",
             "combination_analysis",
+            "flying_hidden_analysis",
             "completion_chain",
             "advanced_layers",
             "question_template",
@@ -197,7 +198,6 @@ def prompt_contract() -> dict:
             "judgment_frame",
         ],
         "must_not_infer": [
-            "未实现的飞伏",
             "未实现的三合局",
             "未实现的应期",
             "未实现的神煞命中",

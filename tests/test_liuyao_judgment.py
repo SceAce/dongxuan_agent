@@ -8,7 +8,7 @@ def test_derived_lines_merge_line_najia_useful_god_and_strength():
         value="2026-05-28 09:30:00",
     ).to_dict()
 
-    assert payload["schema"] == "liuyao_chart_v7"
+    assert payload["schema"] == "liuyao_chart_v8"
     assert payload["question_template"]["template_id"] == "career_work"
     line = payload["derived_lines"][2]
     assert line["position"] == 3
@@ -88,11 +88,14 @@ def test_judgment_frame_and_prompt_contract_exist():
     assert "spirit_role_analysis" in payload["prompt_contract"]["must_use_fields"]
     assert "twelve_stage_analysis" in payload["prompt_contract"]["must_use_fields"]
     assert "combination_analysis" in payload["prompt_contract"]["must_use_fields"]
+    assert "flying_hidden_analysis" in payload["prompt_contract"]["must_use_fields"]
     assert "completion_chain" in payload["prompt_contract"]["must_use_fields"]
     assert "advanced_layers" in payload["prompt_contract"]["must_use_fields"]
-    assert payload["advanced_layers"]["enabled"] == ["spirit_roles", "twelve_stages", "three_combination"]
+    assert payload["advanced_layers"]["enabled"] == ["spirit_roles", "twelve_stages", "three_combination", "flying_hidden"]
     assert payload["twelve_stage_analysis"]["enabled"] is True
     assert payload["combination_analysis"]["enabled"] is True
-    assert "flying_hidden" in payload["advanced_layers"]["reserved"]
+    assert payload["flying_hidden_analysis"]["enabled"] is True
+    assert "flying_hidden" not in payload["advanced_layers"]["reserved"]
     assert "timing" in payload["advanced_layers"]["reserved"]
+    assert "未实现的飞伏" not in payload["prompt_contract"]["must_not_infer"]
     assert "未实现的神煞命中" in payload["prompt_contract"]["must_not_infer"]

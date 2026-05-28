@@ -12,6 +12,7 @@
 - 必须在 `useful_god_selection` 之后使用 `spirit_role_analysis` 判断用神、原神、忌神、仇神、闲神。
 - 若 `twelve_stages` 在 `advanced_layers.enabled` 中，必须使用 `derived_lines[].twelve_stage` 与 `twelve_stage_analysis`，且十二长生必须先按 spirit_role 解释。
 - 若 `three_combination` 在 `advanced_layers.enabled` 中，必须使用 `combination_analysis`，且三合必须按 role_impact 解释。
+- 若 `flying_hidden` 在 `advanced_layers.enabled` 中，必须使用 `flying_hidden_analysis`，且飞伏必须限于 `najia.hidden_spirits` 已给出的伏神；不得编造伏神。
 - 必须使用 `completion_chain` 作为成事、阻断、反复或证据不足的主证据层。
 - 必须遵守 `advanced_layers.order`；只有 advanced_layers.enabled 中的层可以作为证据。
 - 必须使用 `six_spirits` 作为具体爻上的辅助取象，不作主裁决。
@@ -28,13 +29,13 @@
 - 不得单凭六神定成败；不能单凭青龙断吉，不能单凭白虎断凶，不能单凭玄武断欺瞒。
 - 若 `auxiliary_marks.enabled` 为空，表示神煞未实现；不得在 prompt 中编造命中。
 - 若 `timing` 不在 `advanced_layers.enabled` 中，不得输出具体应期、日期、月份或年份。
-- 若 `flying_hidden` 不在 `advanced_layers.enabled` 中，不得使用飞伏补隐藏用神。
+- 若 `flying_hidden` 不在 `advanced_layers.enabled` 中，不得使用飞伏补隐藏用神；若已启用，也只能引用 `flying_hidden_analysis` 和 `najia.hidden_spirits`，不得编造伏神。
 - 若 `three_combination` 不在 `advanced_layers.enabled` 中，不得使用三合局作证据；若已启用，不得单凭三合断吉凶。
 - 若 `twelve_stages` 不在 `advanced_layers.enabled` 中，不得使用十二长生作证据；若已启用，也只能作为状态辅助，不直接定吉凶。
 - 若 `advance_retreat` 不在 `advanced_layers.enabled` 中，不得使用进退神作证据。
 - 不得使用八字旺衰、格局、调候、病药、大运流年等逻辑。
 - 不得使用大六壬四课三传、天将或大六壬神煞命中逻辑。
-- 不得自行补充未实现的飞伏、三合局、墓绝长生、进退神、应期、神煞命中。
+- 不得自行补充未实现的墓绝长生、进退神、应期、神煞命中；不得自行补充 `najia.hidden_spirits` 之外的飞伏。
 - 如果 JSON 缺少字段，要标记为不确定，不得编造规则结果。
 
 ## 推算顺序
@@ -46,12 +47,13 @@
 3. 再看 `spirit_role_analysis`：先看用神，再看原神，再看忌神，再看仇神，最后看闲神。
 4. 若启用十二长生，再看 `twelve_stage_analysis`，必须按用神、原神、忌神、仇神、闲神分角色解释。
 5. 若启用三合，再看 `combination_analysis`，必须把每个三合、半合、待合落到具体爻位和 `role_impact`。
-6. 检查世应关系。
-7. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
-8. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
-9. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
-10. 最后把 `six_spirits` 作为爻象呈现方式补充，不能覆盖前面证据。
-11. 只输出综合倾向、证据和不确定项。
+6. 若启用飞伏，再看 `flying_hidden_analysis`，必须把伏神、飞神、飞伏生克和 hidden_role_impact 分开说明。
+7. 检查世应关系。
+8. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
+9. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
+10. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
+11. 最后把 `six_spirits` 作为爻象呈现方式补充，不能覆盖前面证据。
+12. 只输出综合倾向、证据和不确定项。
 
 `综合倾向` 只能使用：
 
@@ -84,7 +86,7 @@
 - 若 `selection_result.status = selected`，说明主用神和证据。
 - 若 `selection_result.status = layered`，分别说明主轴、辅助轴和 `conflicts`，不能强行压成单一用神。
 - 若 `selection_result.status = ambiguous`，说明为何冲突未能裁决，不得自行改用神。
-- 若 `selection_result.status = missing`，说明相关六亲缺失；伏神未实现时不得编造隐藏用神。
+- 若 `selection_result.status = missing`，说明相关六亲缺失；只有 `flying_hidden_analysis.hidden_lines` 中出现的伏神可以补充说明，不得编造隐藏用神。
 - 冲突不是错误。冲突应作为信息本身进入推断，例如官鬼看岗位/规则，父母看合同/通知。
 - 说明 `spirit_role_analysis.status` 是否可用；若为 `ready`，必须列出用神、原神、忌神、仇神、闲神的分布。
 
@@ -108,6 +110,7 @@
 - 角色化旺衰：用神是否有力，原神是否能生，用神是否受忌神压制，仇神是否助阻。
 - 十二长生只能说明状态辅助，不直接定吉凶；例如用神临官/帝旺为用神状态支持，忌神临官/帝旺为阻断侧状态支持。
 - 三合必须按 role_impact 解释：合用神/原神为支持侧，合忌神/仇神为阻断侧，不能脱离角色链单断。
+- 飞伏必须按 hidden_role_impact 解释：伏用神/原神为支持或混合证据，伏忌神/仇神为阻断或混合证据，仍不得脱离用神链单断。
 
 不得把旺直接视为吉，不得把死直接视为凶；旺衰只说明爻是否有力。
 
@@ -122,6 +125,16 @@
 - 动爻所临六神只说明事件呈现方式，不能决定事件结果。
 - 静卦时说明没有动爻证据，不能编造动变。
 
+## 飞伏
+
+依据 `najia.hidden_spirits`、`derived_lines[].hidden_spirits` 与 `flying_hidden_analysis` 说明：
+
+- 哪些六亲不上卦而伏于何爻。
+- 伏神只能来自 `najia.hidden_spirits`；不得编造伏神、伏位、伏神地支或飞神。
+- 飞神与伏神的五行关系：飞生伏、飞克伏、伏克飞、同类或无直接生克。
+- `hidden_role_impact` 必须回到用神、原神、忌神、仇神、闲神链条解释。
+- 飞伏只补隐藏取象和潜在阻力/支持，不能覆盖上卦用神、世应、月日、动变、十二长生和三合证据。
+
 ## 综合倾向
 
 只能在已实现字段内合成倾向：
@@ -129,7 +142,7 @@
 - 先列证据 bullets。
 - 再给一个倾向标签：偏有利、偏不利、反复/未定、证据不足。
 - 倾向必须说明来自哪些字段。
-- 优先使用 `completion_chain.tendency` 和 `completion_chain` 的 supporting/blocking/mixed/unresolved 因素；若其中包含十二长生或三合因素，必须仍按 spirit_role 与 role_impact 解释。
+- 优先使用 `completion_chain.tendency` 和 `completion_chain` 的 supporting/blocking/mixed/unresolved 因素；若其中包含十二长生、三合或飞伏因素，必须仍按 spirit_role、role_impact 与 hidden_role_impact 解释。
 - 六神只能作为旁证；若六神象意与六亲、用神、世应、月日、动变冲突，优先后者。
 - 不得使用未实现规则补强结论。
 
@@ -141,6 +154,6 @@
 - 六神已实现为辅助取象，不作主裁决。
 - 神煞只保留 `auxiliary_marks` 预留字段；若 `auxiliary_marks.enabled` 为空，不得编造驿马、桃花、贵人等命中。
 - `advanced_layers.reserved` 中的层不能作为证据。
-- 飞伏、进退神、应期、神煞未实现；不得输出具体应期。
-- 若候选用神缺失且伏神未实现，只能标记未决。
+- 进退神、应期、神煞未实现；不得输出具体应期。
+- 若候选用神缺失且 `flying_hidden_analysis.hidden_lines` 也无对应伏神，只能标记未决。
 - 若证据互相冲突，应保留为反复/未定。

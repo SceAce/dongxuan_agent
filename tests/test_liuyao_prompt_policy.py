@@ -52,3 +52,9 @@ def test_liuyao_prompt_requires_role_aware_three_combination():
         assert text in PROMPT
     assert "三合必须按 role_impact 解释" in PROMPT
     assert "不得单凭三合断吉凶" in PROMPT
+
+
+def test_liuyao_prompt_requires_bounded_flying_hidden():
+    for text in ["flying_hidden_analysis", "飞伏", "不得编造伏神", "najia.hidden_spirits"]:
+        assert text in PROMPT
+    assert "不得输出具体应期" in PROMPT
