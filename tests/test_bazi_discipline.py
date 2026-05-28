@@ -14,6 +14,39 @@ def test_middle_image_scores_accepts_score_shaped_base_and_preserves_evidence():
     assert result["信息处理"]["evidence"] == ["结构证据"]
 
 
+def test_question_only_professional_context_does_not_create_discipline_groups():
+    middle_scores = build_middle_image_scores({}, {}, "适合什么专业")
+    result = build_discipline_profile(middle_scores, question="适合什么专业")
+
+    assert middle_scores == {}
+    assert result["groups"] == []
+    assert result["recommended_mode"].startswith("证据不足")
+
+
+def test_middle_image_scores_preserves_rule_training_score_shaped_input():
+    result = build_middle_image_scores(
+        {"规则训练": {"score": 1.1, "evidence": ["规则训练成立"]}},
+        {},
+    )
+
+    assert result["规则训练"]["base_score"] == 1.1
+    assert result["规则训练"]["final_score"] == 1.1
+    assert result["规则训练"]["evidence"] == ["规则训练成立"]
+
+
+def test_rule_training_contributes_to_law_public_policy_group():
+    middle_scores = build_middle_image_scores(
+        {"规则训练": {"score": 1.2, "evidence": ["规则训练成立"]}},
+        {},
+    )
+    result = build_discipline_profile(middle_scores)
+
+    group = next(group for group in result["groups"] if group["name"] == "law_public_policy")
+    assert "规则训练" in group["supporting_images"]
+    assert group["score"] > 0
+    assert "规则训练成立" in group["structural_evidence"]
+
+
 def test_middle_image_scores_caps_individual_spirit_hit():
     result = build_middle_image_scores(
         {"信息处理": {"base_score": 1.0}},

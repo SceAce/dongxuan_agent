@@ -9,6 +9,7 @@ MIDDLE_IMAGES = {
     "工程系统",
     "文本表达",
     "制度法理",
+    "规则训练",
     "人文研究",
     "公共传播",
     "教育训练",
@@ -25,6 +26,7 @@ QUESTION_KEYWORDS = {
     "工程系统": ("工程", "系统", "硬件", "制造", "建筑"),
     "文本表达": ("中文", "文学", "写作", "语言", "表达"),
     "制度法理": ("法律", "法学", "公务", "政策", "治理"),
+    "规则训练": ("规则", "规范", "训练", "纪律"),
     "人文研究": ("历史", "哲学", "文化", "研究"),
     "公共传播": ("传播", "媒体", "新闻", "平台", "内容"),
     "教育训练": ("教育", "师范", "培训", "课程"),
@@ -37,14 +39,14 @@ QUESTION_KEYWORDS = {
 
 DISCIPLINE_GROUPS = {
     "humanities_text": {"文本表达": 1.0, "人文研究": 0.9, "研究专精": 0.45, "教育训练": 0.25},
-    "law_public_policy": {"制度法理": 1.0, "公共传播": 0.35, "资源经营": 0.3, "信息处理": 0.25},
-    "stem_engineering": {"工程系统": 1.0, "技能输出": 0.75, "信息处理": 0.45, "研究专精": 0.3},
+    "law_public_policy": {"制度法理": 1.0, "规则训练": 0.55, "公共传播": 0.35, "资源经营": 0.3, "信息处理": 0.25},
+    "stem_engineering": {"工程系统": 1.0, "技能输出": 0.75, "信息处理": 0.45, "研究专精": 0.3, "规则训练": 0.2},
     "information_data": {"信息处理": 1.0, "工程系统": 0.45, "技能输出": 0.35, "研究专精": 0.25},
     "business_management": {"资源经营": 1.0, "制度法理": 0.35, "公共传播": 0.3, "信息处理": 0.3},
     "media_communication": {"公共传播": 1.0, "文本表达": 0.4, "艺术设计": 0.35, "跨域迁移": 0.3},
-    "education_training": {"教育训练": 1.0, "文本表达": 0.35, "研究专精": 0.3, "信息处理": 0.2},
+    "education_training": {"教育训练": 1.0, "规则训练": 0.45, "文本表达": 0.35, "研究专精": 0.3, "信息处理": 0.2},
     "arts_design": {"艺术设计": 1.0, "公共传播": 0.4, "技能输出": 0.3, "文本表达": 0.25},
-    "health_life_science": {"生命健康": 1.0, "研究专精": 0.4, "教育训练": 0.3, "制度法理": 0.2},
+    "health_life_science": {"生命健康": 1.0, "研究专精": 0.4, "教育训练": 0.3, "规则训练": 0.25, "制度法理": 0.2},
 }
 
 CROSS_DOMAIN_PAIRS = {
@@ -149,11 +151,13 @@ def _apply_question_deltas(scores: dict[str, dict[str, Any]], question: str) -> 
     if not question:
         return
     for image, keywords in QUESTION_KEYWORDS.items():
-        if image in scores and any(keyword in question for keyword in keywords):
+        if image in scores and _has_chart_or_spirit_evidence(scores[image]) and any(keyword in question for keyword in keywords):
             scores[image]["question_delta"] += 0.1
             scores[image]["evidence"].append(f"问题语境指向{image}。")
     if any(keyword in question for keyword in ("专业", "职业", "学什么", "高考", "就业")):
         for image in ("信息处理", "技能输出", "制度法理", "教育训练", "公共传播"):
+            if not _has_chart_or_spirit_evidence(scores[image]):
+                continue
             scores[image]["question_delta"] += 0.05
             scores[image]["evidence"].append("专业/职业问题语境下保留该中间画像。")
 
@@ -222,6 +226,10 @@ def _confidence(score: float, supporting_images: list[str]) -> str:
     if score > 0:
         return "low"
     return "none"
+
+
+def _has_chart_or_spirit_evidence(item: dict[str, Any]) -> bool:
+    return _number(item.get("base_score")) > 0 or _number(item.get("spirit_delta")) > 0
 
 
 def _spirit_evidence(hit: dict[str, Any], image: str, delta: float) -> str:
