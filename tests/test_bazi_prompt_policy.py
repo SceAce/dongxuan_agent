@@ -53,3 +53,13 @@ def test_bazi_prompt_constrains_major_and_career_identification():
     assert "direction_profile" in text
     assert "knowledge_query_terms" in text
     assert "knowledge_sources" in text
+
+
+def test_bazi_prompt_constrains_model_assisted_major_landing():
+    text = PROMPT.read_text(encoding="utf-8")
+
+    assert "discipline_profile" in text
+    assert "神煞只作辅助加权" in text
+    assert "不得强行归为纯文或纯理" in text
+    assert "联网检索只能用于解释现代专业实际学习内容" in text
+    assert "不得覆盖命盘画像裁决" in text

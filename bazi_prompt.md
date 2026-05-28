@@ -44,6 +44,11 @@
 - 专业/职业/行业识别题必须先读取 `strength_analysis.element_forces.*.season_power`、`effective_power`、`root_status` 和 `strength_analysis.day_master_strength.evidence`，再合 `imagery_analysis.answer_guidance.major_or_career_identification.symbolic_dynamics`、`direction_profile`、`knowledge_query_terms`、`knowledge_sources` 定象。
 - 专业/职业/行业识别题不得按五行或十神出现即展开类象；月令不得令、有效力量低、根气受损的五行只能作弱象或排除理由。
 - 专业/职业/行业识别题最多输出两个现实落点；每个现实落点只能是一个原子专业、行业或职业方向，不得在同一个落点里用顿号、斜杠或逗号堆叠多个方向。
+- 专业/职业/行业识别题若有 `discipline_profile`，必须以其高分族群、`supporting_images`、`structural_evidence` 和 `weakening_factors` 作为现实落点边界。
+- 神煞只作辅助加权；文昌、学堂、华盖、桃花、驿马、贵人、禄神、将星、羊刃等不得直接等同文科、理工、专业、职业或结果。
+- 不得强行归为纯文或纯理；若 `discipline_profile.cross_domain` 为 true，应优先按交叉型专业/职业方向解释。
+- 联网检索只能用于解释现代专业实际学习内容、职业任务和现实名称，不得覆盖命盘画像裁决。
+- 现实落点必须回指 `discipline_profile.groups`、`middle_image_scores` 和 `spirit_sha_analysis.active`；神煞证据只能写成辅助增强，不可写成主因。
 - 主象必须是证据最多、与用户问题最贴近的一类事件。
 - 次象只有在另一组证据稳定存在时才输出，且最多一个次象。
 - 如果候选冲突，先说明冲突，再给倾向。
@@ -73,6 +78,7 @@
 - 五行强弱与病药：引用 `strength_analysis.element_forces.*.season_power`、`effective_power`、`root_status`，说明哪些象有力、哪些只是存在但无力。
 - 干支作用与格局：引用 `imagery_analysis.answer_guidance.major_or_career_identification.symbolic_dynamics`，说明生克泄耗、冲合刑害、月令取格、病药喜忌怎样共同塑造画像。
 - 知识库象义：引用 `imagery_analysis.answer_guidance.major_or_career_identification.knowledge_query_terms` 与 `knowledge_sources`，说明实际取用了哪些知识库术语/来源；若未检索到支持，不得自行编造。
+- 专业族群画像：引用 `imagery_analysis.answer_guidance.major_or_career_identification.discipline_profile`，说明高分族群、是否交叉型、哪些中间画像成立，哪些画像被削弱。
 
 ## 现实落点
 
@@ -81,6 +87,7 @@
 ## 证据
 
 - 取象收敛：引用 `direction_profile.favorable_modes`、`weak_or_unsuitable_modes`、`real_world_landing_constraints` 和 `main_image.evidence`，说明为什么现实落点与画像相符。
+- 神煞辅助：如有 `spirit_sha_analysis.active`，只说明它增强了哪些中间画像；不得写成“因某神煞所以是某专业”。
 - 排除理由：最多说明 1-2 个被排除方向，理由必须是月令不得令、有效力量不足、干支作用受制、病药不支持、知识库象义不支持或与问题阶段不贴合。
 ```
 
