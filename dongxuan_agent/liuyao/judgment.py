@@ -149,6 +149,7 @@ def prompt_contract() -> dict:
         "must_use_fields": [
             "derived_lines",
             "useful_god_analysis",
+            "useful_god_selection",
             "relations",
             "judgment_frame",
         ],
