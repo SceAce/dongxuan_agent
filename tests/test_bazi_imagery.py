@@ -84,7 +84,7 @@ def test_major_identification_converges_and_uses_season_strength():
     assert "primary_directions" not in guidance
     assert "supplement_directions" not in guidance
     assert guidance["max_real_world_landings"] == 2
-    assert guidance["forbidden"] == "禁止输出五行/十神等于现实专业或行业的直接映射；禁止由工具预设专业名。"
+    assert guidance["forbidden"] == "禁止输出五行/十神/神煞等于现实专业或行业的直接映射；禁止由工具预设专业名。"
     assert guidance["knowledge_query_terms"]
     assert {"五行", "十神", "旺衰", "干支"} <= set(guidance["knowledge_query_terms"])
     assert guidance["knowledge_sources"]
@@ -124,6 +124,30 @@ def test_major_identification_converges_and_uses_season_strength():
     assert any(
         "月令" in evidence["rule"] or "季节" in evidence["rule"]
         for evidence in guidance["evidence"]
+    )
+
+
+def test_major_identification_includes_spirit_sha_and_discipline_profile():
+    result = build_imagery_analysis(_payload("他2024年高考后适合什么专业"))
+    guidance = result["answer_guidance"]["major_or_career_identification"]
+
+    assert guidance["spirit_sha_analysis"]["scoring_policy"].startswith("神煞为辅助加权")
+    assert "middle_image_scores" in guidance
+    assert "discipline_profile" in guidance
+    assert guidance["discipline_profile"]["groups"]
+    assert "不得强行归为纯文或纯理" in guidance["discipline_profile"]["constraints_for_llm"]
+    assert guidance["llm_landing_constraints"]
+
+
+def test_spirit_sha_does_not_replace_existing_landing_evidence():
+    result = build_imagery_analysis(_payload("他2024年高考后适合什么专业"))
+    guidance = result["answer_guidance"]["major_or_career_identification"]
+
+    assert guidance["landing_evidence"]["supported"]
+    assert guidance["symbolic_layers"]["middle_images"]
+    assert all(
+        item["score"] >= 0
+        for item in guidance["discipline_profile"]["groups"]
     )
 
 

@@ -4,6 +4,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from .discipline import build_discipline_profile, build_middle_image_scores
+from .spirits import build_bazi_spirit_sha_analysis
+
 
 WIKI_ROOT = Path("/home/source/Documents/东玄知识库/wiki")
 SYMBOLIC_LAYERS_PATH = WIKI_ROOT / "structured" / "bazi_symbolic_layers.json"
@@ -38,7 +41,7 @@ def build_imagery_analysis(payload: dict) -> dict:
             "不能仅凭财星直接断恋爱或得财，必须结合日支、问题背景和岁运引动。",
             "不能仅凭官杀直接断灾祸或上岸，必须结合格局、药病和现实目标。",
             "识别专业、职业、行业时必须先形成抽象取象画像，再给最多两个现实落点；不得罗列候选清单。",
-            "识别专业、职业、行业时必须先看月令季节力量、有效力量、干支作用和强弱证据，不得把五行或十神直接等同于现实专业。",
+            "识别专业、职业、行业时必须先看月令季节力量、有效力量、干支作用、神煞辅助和强弱证据，不得把五行、十神或神煞直接等同于现实专业。",
             "取象 V1 只做现代语境映射和证据收敛，不替代用户现实反馈。",
         ],
         "reasoning_chain": _reasoning_chain(payload, main, secondary),
@@ -225,9 +228,14 @@ def _reasoning_chain(payload: dict, main: dict, secondary: dict) -> list[str]:
 def _answer_guidance(payload: dict, domain: str, main: dict, secondary: dict) -> dict:
     if domain != "专业/职业识别":
         return {}
+    question = payload.get("question") or ""
+    spirit_sha = build_bazi_spirit_sha_analysis(payload)
+    base_middle_scores = _base_middle_image_scores(payload)
+    middle_image_scores = build_middle_image_scores(base_middle_scores, spirit_sha, question)
+    discipline_profile = build_discipline_profile(middle_image_scores, question)
     return {
         "major_or_career_identification": {
-            "rule": "专业/职业/行业识别题必须先合参五行旺衰、干支作用、病药喜忌和知识库象义，再归纳现实落点。",
+            "rule": "专业/职业/行业识别题必须先合参五行旺衰、干支作用、病药喜忌、神煞辅助和知识库象义，再归纳现实落点；神煞只作辅助加权。",
             "max_real_world_landings": 2,
             "knowledge_query_terms": _knowledge_query_terms(payload, main, secondary),
             "knowledge_sources": _knowledge_sources(_knowledge_query_terms(payload, main, secondary)),
@@ -235,8 +243,12 @@ def _answer_guidance(payload: dict, domain: str, main: dict, secondary: dict) ->
             "landing_evidence": _landing_evidence(payload),
             "symbolic_dynamics": _symbolic_dynamics(payload),
             "direction_profile": _direction_profile(payload, main, secondary),
+            "spirit_sha_analysis": spirit_sha,
+            "middle_image_scores": middle_image_scores,
+            "discipline_profile": discipline_profile,
+            "llm_landing_constraints": discipline_profile["constraints_for_llm"],
             "evidence": _season_strength_evidence(payload),
-            "forbidden": "禁止输出五行/十神等于现实专业或行业的直接映射；禁止由工具预设专业名。",
+            "forbidden": "禁止输出五行/十神/神煞等于现实专业或行业的直接映射；禁止由工具预设专业名。",
         }
     }
 
@@ -476,6 +488,19 @@ def _middle_image_strengths(payload: dict, active_middle: set[str]) -> dict[str,
     for name in active_middle:
         strengths.setdefault(name, {"score": 1.0, "reasons": ["由命盘字段合参成立"]})
     return strengths
+
+
+def _base_middle_image_scores(payload: dict) -> dict[str, dict]:
+    dynamics = _symbolic_dynamics(payload)
+    active_middle = _active_middle_image_names(payload, dynamics)
+    strengths = _middle_image_strengths(payload, active_middle)
+    return {
+        name: {
+            "score": item.get("score", 0),
+            "evidence": item.get("reasons", []),
+        }
+        for name, item in strengths.items()
+    }
 
 
 def _load_symbolic_layers() -> dict:
