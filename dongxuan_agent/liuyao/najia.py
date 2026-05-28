@@ -138,11 +138,12 @@ def build_najia(hexagram: Hexagram) -> dict:
             }
         )
     present = {line["six_relative"] for line in lines}
+    missing_relatives = [name for name in ("兄弟", "子孙", "妻财", "官鬼", "父母") if name not in present]
     return {
         "palace_element": palace_element,
         "lines": lines,
-        "missing_relatives": [name for name in ("兄弟", "子孙", "妻财", "官鬼", "父母") if name not in present],
-        "hidden_spirits": [],
+        "missing_relatives": missing_relatives,
+        "hidden_spirits": _hidden_spirits(lines, missing_relatives, palace),
     }
 
 
@@ -186,6 +187,42 @@ def _hexagram_by_short_name(name: str) -> Hexagram:
     from .hexagrams import hexagram_by_name
 
     return hexagram_by_name(name)
+
+
+def _hidden_spirits(visible_lines: list[dict], missing_relatives: list[str], palace: dict) -> list[dict]:
+    if not missing_relatives:
+        return []
+    palace_trigram = palace["palace"].replace("宫", "")
+    pure_hexagram = _hexagram_by_short_name(palace_trigram)
+    pure_stem_branches = (
+        NAJIA_BY_TRIGRAM[pure_hexagram.lower_trigram]["lower"]
+        + NAJIA_BY_TRIGRAM[pure_hexagram.upper_trigram]["upper"]
+    )
+    visible_by_position = {line["position"]: line for line in visible_lines}
+    hidden = []
+    for position, stem_branch in enumerate(pure_stem_branches, start=1):
+        branch = stem_branch[1]
+        hidden_element = BRANCH_ELEMENTS[branch]
+        hidden_relative = six_relative(palace["palace_element"], hidden_element)
+        if hidden_relative not in missing_relatives:
+            continue
+        flying = visible_by_position[position]
+        hidden.append(
+            {
+                "position": position,
+                "name": _line_name(position),
+                "hidden_stem_branch": stem_branch,
+                "hidden_branch": branch,
+                "hidden_element": hidden_element,
+                "hidden_six_relative": hidden_relative,
+                "flying_stem_branch": flying["stem_branch"],
+                "flying_branch": flying["branch"],
+                "flying_element": flying["element"],
+                "flying_six_relative": flying["six_relative"],
+                "source_palace_hexagram": pure_hexagram.name,
+            }
+        )
+    return hidden
 
 
 def _line_name(position: int) -> str:

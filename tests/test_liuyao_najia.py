@@ -35,6 +35,27 @@ def test_najia_uses_palace_element_not_day_master():
     assert "day_master_element" not in payload
 
 
+def test_missing_relative_gets_hidden_spirit_from_palace_pure_hexagram():
+    payload = build_najia(hexagram_by_name("天地否"))
+
+    assert payload["missing_relatives"] == ["子孙"]
+    assert payload["hidden_spirits"] == [
+        {
+            "position": 1,
+            "name": "初爻",
+            "hidden_stem_branch": "甲子",
+            "hidden_branch": "子",
+            "hidden_element": "水",
+            "hidden_six_relative": "子孙",
+            "flying_stem_branch": "乙未",
+            "flying_branch": "未",
+            "flying_element": "土",
+            "flying_six_relative": "父母",
+            "source_palace_hexagram": "乾为天",
+        }
+    ]
+
+
 def test_all_hexagrams_have_palace_info():
     for hexagram in HEXAGRAMS_BY_BINARY.values():
         info = palace_info(hexagram)
