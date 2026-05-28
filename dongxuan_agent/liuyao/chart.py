@@ -14,6 +14,7 @@ from .hexagrams import (
     parse_line_states,
     parse_named_hexagram,
 )
+from .judgment import enrich_payload
 from .najia import build_najia, palace_info
 from .question import classify_question
 
@@ -35,8 +36,8 @@ class LiuyaoChart:
     def to_dict(self) -> dict:
         moving_lines = [line.position for line in self.lines if line.moving]
         palace = palace_info(self.original)
-        return {
-            "schema": "liuyao_chart_v1",
+        payload = {
+            "schema": "liuyao_chart_v2",
             "input": {
                 "method": self.method,
                 "raw": self.raw,
@@ -59,6 +60,7 @@ class LiuyaoChart:
                 "六爻 MVP 只生成排盘结构和候选检查项，不做最终吉凶、应期或用神定夺。",
             ],
         }
+        return enrich_payload(payload)
 
 
 def build_liuyao_chart(
