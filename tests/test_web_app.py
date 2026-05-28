@@ -252,5 +252,26 @@ def test_settings_can_read_model_provider_config_toml(tmp_path, monkeypatch):
     assert settings.openai_wire_api == "responses"
 
 
+def test_default_model_timeout_is_long_enough_for_analysis(monkeypatch):
+    monkeypatch.delenv("DONGXUAN_REQUEST_TIMEOUT_SECONDS", raising=False)
+
+    from dongxuan_agent.web.config import load_settings
+
+    settings = load_settings()
+
+    assert settings.request_timeout_seconds >= 180
+
+
+def test_llm_message_requires_numbered_public_analysis_steps():
+    from dongxuan_agent.web.llm import _compose_user_message
+
+    message = _compose_user_message(system="bazi", prompt="原始 prompt", context={"question": "问事"})
+
+    assert "编号化公开分析步骤" in message
+    assert "不要输出隐藏思维链" in message
+    assert "1." in message
+    assert "2." in message
+
+
 def _json_roundtrip(value):
     return json.loads(json.dumps(value, ensure_ascii=False))

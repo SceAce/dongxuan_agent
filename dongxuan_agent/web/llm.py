@@ -47,6 +47,8 @@ class OpenAILLMAdapter(LLMAdapter):
         except httpx.HTTPStatusError as exc:
             detail = _extract_error_detail(response)
             raise RuntimeError(f"模型接口返回 {response.status_code}: {detail}") from exc
+        except httpx.TimeoutException as exc:
+            raise RuntimeError(f"模型接口读取超时，请稍后重试或调大 DONGXUAN_REQUEST_TIMEOUT_SECONDS；当前超时为 {self._timeout} 秒。") from exc
         data = response.json()
         if self._wire_api == "responses":
             return _extract_responses_text(data)
@@ -94,6 +96,12 @@ def _compose_user_message(*, system: str, prompt: str, context: dict) -> str:
 
     return (
         f"# System\n{system}\n\n"
+        "# Output Contract\n"
+        "请输出编号化公开分析步骤，而不是只给最终结论。要求：\n"
+        "1. 先说明你会按哪个系统流程分析，并校验关键盘面字段。\n"
+        "2. 再逐条列出你引用的 JSON 字段、字段含义、推导方向和不确定项。\n"
+        "3. 每一步必须是可展示给用户的证据链；不要输出隐藏思维链、内部草稿或无字段依据的自由联想。\n"
+        "4. 最后给综合判断、风险边界和仍需补充的信息。\n\n"
         "# Prompt\n"
         f"{prompt.strip()}\n\n"
         "# JSON Context\n"

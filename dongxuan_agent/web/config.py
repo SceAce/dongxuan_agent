@@ -45,7 +45,7 @@ def load_settings() -> WebSettings:
             or _blank_to_none(str(codex_config.get("wire_api") or ""))
             or "chat"
         ),
-        request_timeout_seconds=float(os.getenv("DONGXUAN_REQUEST_TIMEOUT_SECONDS", "60")),
+        request_timeout_seconds=float(os.getenv("DONGXUAN_REQUEST_TIMEOUT_SECONDS", "240")),
         max_question_length=int(os.getenv("DONGXUAN_MAX_QUESTION_LENGTH", "2000")),
     )
 

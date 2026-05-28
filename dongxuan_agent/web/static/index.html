@@ -301,7 +301,7 @@
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         submit.disabled = true;
-        analysis.textContent = "分析中...";
+        analysis.textContent = "分析中...\n\n大模型会先生成编号化公开分析步骤，再给综合判断。复杂盘面可能需要 1-4 分钟。";
         context.textContent = "";
         try {
           const body = buildPayload();
