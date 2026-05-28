@@ -37,7 +37,7 @@ def test_liuyao_prompt_requires_spirit_roles_and_advanced_layer_order():
     assert "先看用神，再看原神，再看忌神，再看仇神" in PROMPT
     assert "动爻必须先按 spirit_role 判断" in PROMPT
     assert "只有 advanced_layers.enabled 中的层可以作为证据" in PROMPT
-    assert "不得输出具体应期" in PROMPT
+    assert "不得输出具体公历日期" in PROMPT
 
 
 def test_liuyao_prompt_requires_role_aware_twelve_stages():
@@ -57,10 +57,15 @@ def test_liuyao_prompt_requires_role_aware_three_combination():
 def test_liuyao_prompt_requires_bounded_flying_hidden():
     for text in ["flying_hidden_analysis", "飞伏", "不得编造伏神", "najia.hidden_spirits"]:
         assert text in PROMPT
-    assert "不得输出具体应期" in PROMPT
+    assert "不得输出具体公历日期" in PROMPT
 
 
 def test_liuyao_prompt_requires_role_aware_advance_retreat():
     for text in ["advance_retreat_analysis", "进退神", "用神进", "忌神进"]:
         assert text in PROMPT
-    assert "应期、神煞未实现；不得输出具体应期" in PROMPT
+    assert "应期只实现地支候选，不换算公历日期" in PROMPT
+
+
+def test_liuyao_prompt_requires_bounded_timing_candidates():
+    for text in ["timing_analysis", "应期候选", "地支候选", "不得换算公历日期"]:
+        assert text in PROMPT

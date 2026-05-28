@@ -207,6 +207,7 @@ def prompt_contract() -> dict:
             "combination_analysis",
             "flying_hidden_analysis",
             "advance_retreat_analysis",
+            "timing_analysis",
             "completion_chain",
             "advanced_layers",
             "question_template",
@@ -216,7 +217,6 @@ def prompt_contract() -> dict:
         ],
         "must_not_infer": [
             "未实现的三合局",
-            "未实现的应期",
             "未实现的神煞命中",
             "八字旺衰或格局",
             "大六壬四课三传",
