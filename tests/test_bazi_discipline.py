@@ -93,6 +93,40 @@ def test_middle_image_scores_caps_single_spirit_hit_without_structural_base():
     assert result["信息处理"]["spirit_delta"] <= 0.08
 
 
+def test_spirit_only_middle_image_does_not_create_discipline_profile():
+    middle_scores = build_middle_image_scores(
+        {},
+        {
+            "active": [
+                {
+                    "name": "文昌",
+                    "supports": ["信息处理"],
+                    "score_delta": 0.2,
+                    "avoid": "不直接定专业",
+                }
+            ]
+        },
+        "适合什么专业",
+    )
+    result = build_discipline_profile(middle_scores, "适合什么专业")
+
+    assert middle_scores["信息处理"]["spirit_delta"] > 0
+    assert result["groups"] == []
+    assert result["recommended_mode"].startswith("证据不足")
+
+
+def test_structural_group_keeps_spirit_factors_from_supported_images():
+    middle_scores = build_middle_image_scores(
+        {"信息处理": {"base_score": 1.0, "evidence": ["信息结构成立"]}},
+        {"active": [{"name": "文昌", "supports": ["信息处理"], "score_delta": 0.12}]},
+    )
+    result = build_discipline_profile(middle_scores, "适合什么专业")
+
+    group = next(group for group in result["groups"] if group["name"] == "information_data")
+    assert "信息处理" in group["supporting_images"]
+    assert group["spirit_factors"]
+
+
 def test_middle_image_scores_spirit_evidence_keeps_prompt_safety_context():
     result = build_middle_image_scores(
         {"信息处理": {"base_score": 1.0}},
@@ -122,9 +156,9 @@ def test_middle_image_scores_spirit_evidence_keeps_prompt_safety_context():
 
 def test_discipline_profile_scores_cross_domain_when_groups_are_close():
     middle_scores = {
-        "信息处理": {"final_score": 1.5, "evidence": ["信息处理成立"]},
-        "公共传播": {"final_score": 1.4, "evidence": ["公共传播成立"]},
-        "文本表达": {"final_score": 1.2, "evidence": ["文本表达成立"]},
+        "信息处理": {"base_score": 1.5, "final_score": 1.5, "evidence": ["信息处理成立"]},
+        "公共传播": {"base_score": 1.4, "final_score": 1.4, "evidence": ["公共传播成立"]},
+        "文本表达": {"base_score": 1.2, "final_score": 1.2, "evidence": ["文本表达成立"]},
     }
     result = build_discipline_profile(middle_scores, question="适合什么专业")
 
@@ -135,9 +169,9 @@ def test_discipline_profile_scores_cross_domain_when_groups_are_close():
 
 def test_discipline_profile_keeps_strong_engineering_dominant_with_humanities_spirit():
     middle_scores = {
-        "工程系统": {"final_score": 2.0, "evidence": ["金土结构强"]},
-        "技能输出": {"final_score": 1.8, "evidence": ["食伤项目输出"]},
-        "文本表达": {"final_score": 0.9, "evidence": ["文昌辅助，但结构弱"]},
+        "工程系统": {"base_score": 2.0, "final_score": 2.0, "evidence": ["金土结构强"]},
+        "技能输出": {"base_score": 1.8, "final_score": 1.8, "evidence": ["食伤项目输出"]},
+        "文本表达": {"base_score": 0.9, "final_score": 0.9, "evidence": ["文昌辅助，但结构弱"]},
     }
     result = build_discipline_profile(middle_scores, question="高考后学什么专业")
 
@@ -148,8 +182,8 @@ def test_discipline_profile_keeps_strong_engineering_dominant_with_humanities_sp
 
 def test_discipline_profile_has_structured_group_evidence():
     middle_scores = {
-        "制度法理": {"final_score": 1.4, "evidence": ["官印规则成立"]},
-        "信息处理": {"final_score": 1.3, "evidence": ["信息处理成立"]},
+        "制度法理": {"base_score": 1.4, "final_score": 1.4, "evidence": ["官印规则成立"]},
+        "信息处理": {"base_score": 1.3, "final_score": 1.3, "evidence": ["信息处理成立"]},
     }
     result = build_discipline_profile(middle_scores, question="职业方向")
 

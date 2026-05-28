@@ -166,6 +166,7 @@ def _score_group(name: str, weights: dict[str, float], middle_scores: dict[str, 
     supporting_images = []
     spirit_factors = []
     structural_evidence = []
+    has_structural_support = False
     score = 0.0
     for image, weight in weights.items():
         item = middle_scores.get(image) or {}
@@ -174,10 +175,16 @@ def _score_group(name: str, weights: dict[str, float], middle_scores: dict[str, 
             continue
         score += image_score * weight
         supporting_images.append(image)
-        if _number(item.get("base_score", item.get("final_score"))) > 0:
+        if _number(item.get("base_score")) > 0:
+            has_structural_support = True
             structural_evidence.extend(item.get("evidence") or [])
         if _number(item.get("spirit_delta")) > 0:
             spirit_factors.append(f"{image}受神煞辅助加权 {round(_number(item.get('spirit_delta')), 3)}")
+    if not has_structural_support:
+        supporting_images = []
+        spirit_factors = []
+        structural_evidence = []
+        score = 0.0
     score = round(score, 3)
     return {
         "name": name,
