@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from .advance_retreat import (
+    build_advance_retreat_analysis,
+    completion_factors as advance_retreat_completion_factors,
+)
 from .combinations import build_combination_analysis, completion_factors
 from .flying_hidden import (
     attach_hidden_spirits,
@@ -27,6 +31,8 @@ def enrich_payload(payload: dict) -> dict:
     combination_analysis = build_combination_analysis(derived_lines, spirit_role_analysis, payload["calendar"])
     attach_hidden_spirits(derived_lines, payload["najia"]["hidden_spirits"])
     flying_hidden_analysis = build_flying_hidden_analysis(payload["najia"]["hidden_spirits"], spirit_role_analysis)
+    relations = build_relations(payload, derived_lines, useful_gods)
+    advance_retreat_analysis = build_advance_retreat_analysis(derived_lines, relations["moving_effects"])
     completion_chain = build_completion_chain(
         derived_lines,
         spirit_role_analysis,
@@ -34,10 +40,10 @@ def enrich_payload(payload: dict) -> dict:
         twelve_stage_analysis,
         completion_factors(combination_analysis),
         flying_hidden_completion_factors(flying_hidden_analysis),
+        advance_retreat_completion_factors(advance_retreat_analysis),
     )
     six_spirits = assign_six_spirits(payload["calendar"]["day_gz"], derived_lines)
     _attach_six_spirits_to_lines(derived_lines, six_spirits)
-    relations = build_relations(payload, derived_lines, useful_gods)
     payload["derived_lines"] = derived_lines
     payload["question_template"] = question_template
     payload["useful_god_analysis"] = useful_gods
@@ -47,6 +53,7 @@ def enrich_payload(payload: dict) -> dict:
     payload["twelve_stage_analysis"] = twelve_stage_analysis
     payload["combination_analysis"] = combination_analysis
     payload["flying_hidden_analysis"] = flying_hidden_analysis
+    payload["advance_retreat_analysis"] = advance_retreat_analysis
     payload["completion_chain"] = completion_chain
     payload["advanced_layers"] = advanced_layers()
     payload["six_spirits"] = six_spirits

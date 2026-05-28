@@ -94,6 +94,7 @@ def build_completion_chain(
     twelve_stage_analysis: dict | None = None,
     combination_factors: dict | None = None,
     flying_hidden_factors: dict | None = None,
+    advance_retreat_factors: dict | None = None,
 ) -> dict:
     if spirit_role_analysis["status"] != "ready":
         supporting = []
@@ -103,6 +104,10 @@ def build_completion_chain(
             supporting.extend(flying_hidden_factors["supporting_factors"])
             blocking.extend(flying_hidden_factors["blocking_factors"])
             mixed.extend(flying_hidden_factors["mixed_factors"])
+        if advance_retreat_factors:
+            supporting.extend(advance_retreat_factors["supporting_factors"])
+            blocking.extend(advance_retreat_factors["blocking_factors"])
+            mixed.extend(advance_retreat_factors["mixed_factors"])
         return {
             "mode": "spirit_role_completion",
             "tendency": "insufficient",
@@ -128,6 +133,10 @@ def build_completion_chain(
         supporting.extend(flying_hidden_factors["supporting_factors"])
         blocking.extend(flying_hidden_factors["blocking_factors"])
         mixed.extend(flying_hidden_factors["mixed_factors"])
+    if advance_retreat_factors:
+        supporting.extend(advance_retreat_factors["supporting_factors"])
+        blocking.extend(advance_retreat_factors["blocking_factors"])
+        mixed.extend(advance_retreat_factors["mixed_factors"])
     tendency = _tendency(supporting, blocking, mixed)
     return {
         "mode": "spirit_role_completion",
