@@ -92,6 +92,7 @@ def build_completion_chain(
     spirit_role_analysis: dict,
     useful_god_selection: dict,
     twelve_stage_analysis: dict | None = None,
+    combination_factors: dict | None = None,
 ) -> dict:
     if spirit_role_analysis["status"] != "ready":
         return {
@@ -111,6 +112,10 @@ def build_completion_chain(
         supporting.extend(twelve_stage_analysis["supporting_factors"])
         blocking.extend(twelve_stage_analysis["blocking_factors"])
         mixed.extend(twelve_stage_analysis["mixed_factors"])
+    if combination_factors:
+        supporting.extend(combination_factors["supporting_factors"])
+        blocking.extend(combination_factors["blocking_factors"])
+        mixed.extend(combination_factors["mixed_factors"])
     tendency = _tendency(supporting, blocking, mixed)
     return {
         "mode": "spirit_role_completion",
@@ -127,9 +132,8 @@ def build_completion_chain(
 
 def advanced_layers() -> dict:
     return {
-        "enabled": ["spirit_roles", "twelve_stages"],
+        "enabled": ["spirit_roles", "twelve_stages", "three_combination"],
         "reserved": [
-            "three_combination",
             "flying_hidden",
             "advance_retreat",
             "timing",

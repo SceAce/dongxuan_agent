@@ -98,7 +98,7 @@ Combination evidence may be added to `completion_chain`:
 
 ## Tests
 
-- `离之大有` contains `巳` and `酉`, so it produces a `巳酉` half-combination for 金.
+- `离之大有` contains `巳`, `酉`, and `丑`, so it produces a `巳酉丑` full three-combination for 金.
 - In the work-offer sample, 金 is original spirit, so role impact is `supports_original_spirit`.
 - `combination_analysis.enabled` is true.
 - `advanced_layers.enabled == ["spirit_roles", "twelve_stages", "three_combination"]`.
