@@ -24,6 +24,7 @@ class OpenAILLMAdapter(LLMAdapter):
         self._api_key = settings.openai_api_key
         self._base_url = settings.openai_base_url.rstrip("/")
         self._model = settings.openai_model
+        self._wire_api = settings.openai_wire_api
         self._timeout = settings.request_timeout_seconds
 
     def analyze(self, *, system: str, prompt: str, context: dict) -> str:
@@ -37,22 +38,47 @@ class OpenAILLMAdapter(LLMAdapter):
                 "content": _compose_user_message(system=system, prompt=prompt, context=context),
             },
         ]
-        response = httpx.post(
-            f"{self._base_url}/chat/completions",
-            headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-            json={"model": self._model, "messages": messages, "temperature": 0.2},
-            timeout=self._timeout,
-        )
+        if self._wire_api == "responses":
+            response = self._post_responses(system=system, prompt=prompt, context=context)
+        else:
+            response = self._post_chat(messages)
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             detail = _extract_error_detail(response)
             raise RuntimeError(f"模型接口返回 {response.status_code}: {detail}") from exc
         data = response.json()
-        try:
-            return data["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as exc:
-            raise RuntimeError("模型接口响应格式不符合 OpenAI chat completions") from exc
+        if self._wire_api == "responses":
+            return _extract_responses_text(data)
+        return _extract_chat_text(data)
+
+    def _post_chat(self, messages: list[dict]) -> httpx.Response:
+        return httpx.post(
+            f"{self._base_url}/chat/completions",
+            headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+            json={"model": self._model, "messages": messages, "temperature": 0.2},
+            timeout=self._timeout,
+        )
+
+    def _post_responses(self, *, system: str, prompt: str, context: dict) -> httpx.Response:
+        return httpx.post(
+            f"{self._base_url}/responses",
+            headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+            json={
+                "model": self._model,
+                "input": [
+                    {
+                        "role": "system",
+                        "content": "你是只读分析器。只能依据用户消息中的 prompt 与 JSON context 分析，不得要求或假设任何写文件、执行命令、调用 Codex CLI 的能力。",
+                    },
+                    {
+                        "role": "user",
+                        "content": _compose_user_message(system=system, prompt=prompt, context=context),
+                    },
+                ],
+            },
+            timeout=self._timeout,
+        )
 
 
 def build_llm_adapter(settings: WebSettings) -> LLMAdapter:
@@ -92,3 +118,34 @@ def _extract_error_detail(response: httpx.Response) -> str:
         if isinstance(detail, str):
             return detail
     return response.text[:500]
+
+
+def _extract_chat_text(data: dict) -> str:
+    try:
+        return data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError("模型接口响应格式不符合 OpenAI chat completions") from exc
+
+
+def _extract_responses_text(data: dict) -> str:
+    text = data.get("output_text")
+    if isinstance(text, str) and text:
+        return text
+    output = data.get("output")
+    if isinstance(output, list):
+        chunks: list[str] = []
+        for item in output:
+            if not isinstance(item, dict):
+                continue
+            content = item.get("content")
+            if not isinstance(content, list):
+                continue
+            for part in content:
+                if not isinstance(part, dict):
+                    continue
+                part_text = part.get("text")
+                if isinstance(part_text, str):
+                    chunks.append(part_text)
+        if chunks:
+            return "\n".join(chunks)
+    raise RuntimeError("模型接口响应格式不符合 OpenAI responses")

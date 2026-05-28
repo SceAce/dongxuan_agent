@@ -218,5 +218,39 @@ def test_default_auth_path_is_project_local(monkeypatch):
     assert ".codex" not in str(paths[0])
 
 
+def test_settings_can_read_model_provider_config_toml(tmp_path, monkeypatch):
+    auth_path = tmp_path / "auth.json"
+    config_path = tmp_path / "config.toml"
+    auth_path.write_text('{"OPENAI_API_KEY": "sk-test-from-file"}', encoding="utf-8")
+    config_path.write_text(
+        '\n'.join(
+            [
+                'model_provider = "ai"',
+                'model = "gpt-5.5"',
+                '',
+                '[model_providers.ai]',
+                'base_url = "https://aivalux.com"',
+                'wire_api = "responses"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_WIRE_API", raising=False)
+    monkeypatch.setenv("DONGXUAN_CODEX_AUTH_PATH", str(auth_path))
+    monkeypatch.setenv("DONGXUAN_CODEX_CONFIG_PATH", str(config_path))
+
+    from dongxuan_agent.web.config import load_settings
+
+    settings = load_settings()
+
+    assert settings.openai_api_key == "sk-test-from-file"
+    assert settings.openai_base_url == "https://aivalux.com"
+    assert settings.openai_model == "gpt-5.5"
+    assert settings.openai_wire_api == "responses"
+
+
 def _json_roundtrip(value):
     return json.loads(json.dumps(value, ensure_ascii=False))

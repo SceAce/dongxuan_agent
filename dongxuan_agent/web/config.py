@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import os
 import json
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -15,12 +17,14 @@ class WebSettings:
     openai_api_key: str | None
     openai_base_url: str
     openai_model: str
+    openai_wire_api: Literal["chat", "responses"]
     request_timeout_seconds: float
     max_question_length: int
 
 
 def load_settings() -> WebSettings:
     codex_auth = _load_codex_auth()
+    codex_config = _load_codex_config()
     return WebSettings(
         access_password=_blank_to_none(os.getenv("DONGXUAN_ACCESS_PASSWORD")),
         llm_provider=os.getenv("DONGXUAN_LLM_PROVIDER", "echo").strip().lower() or "echo",
@@ -28,9 +32,19 @@ def load_settings() -> WebSettings:
         openai_base_url=(
             _blank_to_none(os.getenv("OPENAI_BASE_URL"))
             or _blank_to_none(_auth_value(codex_auth, "OPENAI_BASE_URL", "base_url", "openai_base_url"))
+            or _blank_to_none(codex_config.get("base_url"))
             or "https://api.openai.com/v1"
         ),
-        openai_model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
+        openai_model=(
+            _blank_to_none(os.getenv("OPENAI_MODEL"))
+            or _blank_to_none(str(codex_config.get("model") or ""))
+            or "gpt-4.1-mini"
+        ),
+        openai_wire_api=_wire_api(
+            _blank_to_none(os.getenv("OPENAI_WIRE_API"))
+            or _blank_to_none(str(codex_config.get("wire_api") or ""))
+            or "chat"
+        ),
         request_timeout_seconds=float(os.getenv("DONGXUAN_REQUEST_TIMEOUT_SECONDS", "60")),
         max_question_length=int(os.getenv("DONGXUAN_MAX_QUESTION_LENGTH", "2000")),
     )
@@ -55,12 +69,49 @@ def _candidate_auth_paths() -> list[Path]:
     return [PROJECT_ROOT / ".dongxuan" / "auth.json"]
 
 
+def _load_codex_config() -> dict:
+    path = _candidate_config_path()
+    if not path.exists():
+        return {}
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    provider_name = data.get("model_provider")
+    model = data.get("model")
+    providers = data.get("model_providers", {})
+    provider_config = providers.get(provider_name, {}) if isinstance(providers, dict) else {}
+    if not isinstance(provider_config, dict):
+        provider_config = {}
+    return {
+        "model": model,
+        "base_url": provider_config.get("base_url"),
+        "wire_api": provider_config.get("wire_api"),
+    }
+
+
+def _candidate_config_path() -> Path:
+    explicit = _blank_to_none(os.getenv("DONGXUAN_CODEX_CONFIG_PATH"))
+    if explicit:
+        return Path(explicit).expanduser()
+    return PROJECT_ROOT / ".dongxuan" / "config.toml"
+
+
 def _auth_value(data: dict, *keys: str) -> str | None:
     for key in keys:
         value = data.get(key)
         if isinstance(value, str):
             return value
     return None
+
+
+def _wire_api(value: str) -> Literal["chat", "responses"]:
+    normalized = value.strip().lower()
+    if normalized in {"responses", "response"}:
+        return "responses"
+    return "chat"
 
 
 def _blank_to_none(value: str | None) -> str | None:
