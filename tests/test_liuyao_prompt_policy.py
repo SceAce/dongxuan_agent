@@ -45,3 +45,10 @@ def test_liuyao_prompt_requires_role_aware_twelve_stages():
         assert text in PROMPT
     assert "十二长生必须先按 spirit_role 解释" in PROMPT
     assert "twelve_stages" in PROMPT
+
+
+def test_liuyao_prompt_requires_role_aware_three_combination():
+    for text in ["combination_analysis", "三合", "role_impact"]:
+        assert text in PROMPT
+    assert "三合必须按 role_impact 解释" in PROMPT
+    assert "不得单凭三合断吉凶" in PROMPT
