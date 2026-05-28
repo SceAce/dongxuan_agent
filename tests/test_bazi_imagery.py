@@ -1,4 +1,5 @@
 from dongxuan_agent.bazi import build_bazi_chart
+from dongxuan_agent.bazi.context import build_bazi_context
 from dongxuan_agent.bazi_analysis import build_year_analysis_hints
 from dongxuan_agent.bazi_climate import analyze_climate
 from dongxuan_agent.bazi_god import build_god_candidates
@@ -132,7 +133,12 @@ def test_major_identification_includes_spirit_sha_and_discipline_profile():
     guidance = result["answer_guidance"]["major_or_career_identification"]
 
     assert guidance["spirit_sha_analysis"]["scoring_policy"].startswith("神煞为辅助加权")
+    assert guidance["spirit_sha_analysis"]["active"]
     assert "middle_image_scores" in guidance
+    assert any(
+        item["spirit_delta"] > 0
+        for item in guidance["middle_image_scores"].values()
+    )
     assert "discipline_profile" in guidance
     assert guidance["discipline_profile"]["groups"]
     assert "不得强行归为纯文或纯理" in guidance["discipline_profile"]["constraints_for_llm"]
@@ -156,3 +162,24 @@ def test_major_identification_takes_priority_in_compound_school_questions():
 
     assert result["question_domain"] == "专业/职业识别"
     assert "major_or_career_identification" in result["answer_guidance"]
+
+
+def test_nested_imagery_discipline_profile_matches_flat_context_top_group():
+    question = "他2024年高考后适合什么专业"
+    nested_guidance = build_imagery_analysis(_payload(question))["answer_guidance"]["major_or_career_identification"]
+    flat_context = build_bazi_context(
+        "2006-12-18 12:30:00",
+        timezone="Asia/Shanghai",
+        gender="男",
+        target_year=2025,
+        question=question,
+    )
+    flat_guidance = flat_context["imagery_analysis"]["answer_guidance"]["major_or_career_identification"]
+    nested_groups = nested_guidance["discipline_profile"]["groups"]
+    flat_groups = flat_guidance["discipline_profile"]["groups"]
+
+    assert nested_groups
+    assert flat_groups
+    assert nested_guidance["discipline_profile"]["constraints_for_llm"]
+    assert flat_guidance["discipline_profile"]["constraints_for_llm"]
+    assert nested_groups[0]["name"] == flat_groups[0]["name"]

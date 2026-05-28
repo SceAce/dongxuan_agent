@@ -233,12 +233,13 @@ def _answer_guidance(payload: dict, domain: str, main: dict, secondary: dict) ->
     base_middle_scores = _base_middle_image_scores(payload)
     middle_image_scores = build_middle_image_scores(base_middle_scores, spirit_sha, question)
     discipline_profile = build_discipline_profile(middle_image_scores, question)
+    query_terms = _knowledge_query_terms(payload, main, secondary)
     return {
         "major_or_career_identification": {
             "rule": "专业/职业/行业识别题必须先合参五行旺衰、干支作用、病药喜忌、神煞辅助和知识库象义，再归纳现实落点；神煞只作辅助加权。",
             "max_real_world_landings": 2,
-            "knowledge_query_terms": _knowledge_query_terms(payload, main, secondary),
-            "knowledge_sources": _knowledge_sources(_knowledge_query_terms(payload, main, secondary)),
+            "knowledge_query_terms": query_terms,
+            "knowledge_sources": _knowledge_sources(query_terms),
             "symbolic_layers": _symbolic_layers(payload),
             "landing_evidence": _landing_evidence(payload),
             "symbolic_dynamics": _symbolic_dynamics(payload),

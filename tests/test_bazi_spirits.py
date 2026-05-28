@@ -46,6 +46,26 @@ def test_bazi_spirit_sha_hits_current_luck_and_flow_year_positions():
     assert "目标流年支" in locations or "目标流年干" in locations
 
 
+def test_bazi_spirit_sha_accepts_nested_chart_payload_with_top_level_hints():
+    flat_payload = _payload()
+    result = build_bazi_spirit_sha_analysis({
+        "chart": {
+            key: flat_payload[key]
+            for key in ("calendar", "day_master", "pillars")
+        },
+        "analysis_hints": flat_payload["analysis_hints"],
+    })
+    locations = {
+        location
+        for item in result["active"]
+        for location in item["hit_positions"]
+    }
+
+    assert result["active"]
+    assert "当前大运支" in locations or "当前大运干" in locations
+    assert "目标流年支" in locations or "目标流年干" in locations
+
+
 def test_bazi_spirit_sha_omits_non_hits_from_active_scoring():
     result = build_bazi_spirit_sha_analysis(_payload())
 
