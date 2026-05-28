@@ -197,6 +197,7 @@ def prompt_contract() -> dict:
             "twelve_stage_analysis",
             "combination_analysis",
             "flying_hidden_analysis",
+            "advance_retreat_analysis",
             "completion_chain",
             "advanced_layers",
             "question_template",

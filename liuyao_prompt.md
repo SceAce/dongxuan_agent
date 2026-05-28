@@ -13,6 +13,7 @@
 - 若 `twelve_stages` 在 `advanced_layers.enabled` 中，必须使用 `derived_lines[].twelve_stage` 与 `twelve_stage_analysis`，且十二长生必须先按 spirit_role 解释。
 - 若 `three_combination` 在 `advanced_layers.enabled` 中，必须使用 `combination_analysis`，且三合必须按 role_impact 解释。
 - 若 `flying_hidden` 在 `advanced_layers.enabled` 中，必须使用 `flying_hidden_analysis`，且飞伏必须限于 `najia.hidden_spirits` 已给出的伏神；不得编造伏神。
+- 若 `advance_retreat` 在 `advanced_layers.enabled` 中，必须使用 `advance_retreat_analysis`，且进退神必须按 spirit_role 和 role_impact 解释。
 - 必须使用 `completion_chain` 作为成事、阻断、反复或证据不足的主证据层。
 - 必须遵守 `advanced_layers.order`；只有 advanced_layers.enabled 中的层可以作为证据。
 - 必须使用 `six_spirits` 作为具体爻上的辅助取象，不作主裁决。
@@ -32,10 +33,10 @@
 - 若 `flying_hidden` 不在 `advanced_layers.enabled` 中，不得使用飞伏补隐藏用神；若已启用，也只能引用 `flying_hidden_analysis` 和 `najia.hidden_spirits`，不得编造伏神。
 - 若 `three_combination` 不在 `advanced_layers.enabled` 中，不得使用三合局作证据；若已启用，不得单凭三合断吉凶。
 - 若 `twelve_stages` 不在 `advanced_layers.enabled` 中，不得使用十二长生作证据；若已启用，也只能作为状态辅助，不直接定吉凶。
-- 若 `advance_retreat` 不在 `advanced_layers.enabled` 中，不得使用进退神作证据。
+- 若 `advance_retreat` 不在 `advanced_layers.enabled` 中，不得使用进退神作证据；若已启用，也只能引用 `advance_retreat_analysis`，不得自行扩展进退规则。
 - 不得使用八字旺衰、格局、调候、病药、大运流年等逻辑。
 - 不得使用大六壬四课三传、天将或大六壬神煞命中逻辑。
-- 不得自行补充未实现的墓绝长生、进退神、应期、神煞命中；不得自行补充 `najia.hidden_spirits` 之外的飞伏。
+- 不得自行补充未实现的墓绝长生、应期、神煞命中；不得自行补充 `najia.hidden_spirits` 之外的飞伏，不得自行补充 `advance_retreat_analysis` 之外的进退神。
 - 如果 JSON 缺少字段，要标记为不确定，不得编造规则结果。
 
 ## 推算顺序
@@ -48,12 +49,13 @@
 4. 若启用十二长生，再看 `twelve_stage_analysis`，必须按用神、原神、忌神、仇神、闲神分角色解释。
 5. 若启用三合，再看 `combination_analysis`，必须把每个三合、半合、待合落到具体爻位和 `role_impact`。
 6. 若启用飞伏，再看 `flying_hidden_analysis`，必须把伏神、飞神、飞伏生克和 hidden_role_impact 分开说明。
-7. 检查世应关系。
-8. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
-9. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
-10. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
-11. 最后把 `six_spirits` 作为爻象呈现方式补充，不能覆盖前面证据。
-12. 只输出综合倾向、证据和不确定项。
+7. 若启用进退，再看 `advance_retreat_analysis`，必须区分用神进、原神进、忌神进、仇神进及其相反影响。
+8. 检查世应关系。
+9. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
+10. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
+11. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
+12. 最后把 `six_spirits` 作为爻象呈现方式补充，不能覆盖前面证据。
+13. 只输出综合倾向、证据和不确定项。
 
 `综合倾向` 只能使用：
 
@@ -135,6 +137,16 @@
 - `hidden_role_impact` 必须回到用神、原神、忌神、仇神、闲神链条解释。
 - 飞伏只补隐藏取象和潜在阻力/支持，不能覆盖上卦用神、世应、月日、动变、十二长生和三合证据。
 
+## 进退
+
+依据 `advance_retreat_analysis` 说明：
+
+- 只有动爻才看进退神。
+- 只引用 `advance_retreat_analysis.by_moving_line` 给出的 change_type，不得自行把其他变爻判为化进或化退。
+- 用神进、原神进通常为支持增强；用神退、原神退为支持减弱。
+- 忌神进、仇神进通常为阻力增强；忌神退、仇神退为阻力减弱。
+- 闲神进退只作中性趋势，不得单独定成败。
+
 ## 综合倾向
 
 只能在已实现字段内合成倾向：
@@ -142,7 +154,7 @@
 - 先列证据 bullets。
 - 再给一个倾向标签：偏有利、偏不利、反复/未定、证据不足。
 - 倾向必须说明来自哪些字段。
-- 优先使用 `completion_chain.tendency` 和 `completion_chain` 的 supporting/blocking/mixed/unresolved 因素；若其中包含十二长生、三合或飞伏因素，必须仍按 spirit_role、role_impact 与 hidden_role_impact 解释。
+- 优先使用 `completion_chain.tendency` 和 `completion_chain` 的 supporting/blocking/mixed/unresolved 因素；若其中包含十二长生、三合、飞伏或进退因素，必须仍按 spirit_role、role_impact 与 hidden_role_impact 解释。
 - 六神只能作为旁证；若六神象意与六亲、用神、世应、月日、动变冲突，优先后者。
 - 不得使用未实现规则补强结论。
 
@@ -154,6 +166,6 @@
 - 六神已实现为辅助取象，不作主裁决。
 - 神煞只保留 `auxiliary_marks` 预留字段；若 `auxiliary_marks.enabled` 为空，不得编造驿马、桃花、贵人等命中。
 - `advanced_layers.reserved` 中的层不能作为证据。
-- 进退神、应期、神煞未实现；不得输出具体应期。
+- 应期、神煞未实现；不得输出具体应期。
 - 若候选用神缺失且 `flying_hidden_analysis.hidden_lines` 也无对应伏神，只能标记未决。
 - 若证据互相冲突，应保留为反复/未定。

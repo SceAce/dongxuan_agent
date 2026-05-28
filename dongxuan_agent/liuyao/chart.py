@@ -37,7 +37,7 @@ class LiuyaoChart:
         moving_lines = [line.position for line in self.lines if line.moving]
         palace = palace_info(self.original)
         payload = {
-            "schema": "liuyao_chart_v8",
+            "schema": "liuyao_chart_v9",
             "input": {
                 "method": self.method,
                 "raw": self.raw,
