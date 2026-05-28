@@ -13,6 +13,7 @@ from .flying_hidden import (
 from .imagery import build_imagery_context, build_useful_god_selection
 from .relations import branch_relation, element_relation, return_relation_label
 from .six_spirits import assign_six_spirits
+from .spirit_sha import auxiliary_marks_payload, build_spirit_sha_analysis
 from .spirit_roles import advanced_layers, build_completion_chain, build_spirit_role_analysis
 from .strength import BRANCH_ELEMENTS, effective_strength, extreme_state, seasonal_state
 from .templates import build_question_template
@@ -52,6 +53,7 @@ def enrich_payload(payload: dict) -> dict:
     )
     six_spirits = assign_six_spirits(payload["calendar"]["day_gz"], derived_lines)
     _attach_six_spirits_to_lines(derived_lines, six_spirits)
+    spirit_sha_analysis = build_spirit_sha_analysis(payload["calendar"], derived_lines)
     payload["derived_lines"] = derived_lines
     payload["question_template"] = question_template
     payload["useful_god_analysis"] = useful_gods
@@ -63,10 +65,11 @@ def enrich_payload(payload: dict) -> dict:
     payload["flying_hidden_analysis"] = flying_hidden_analysis
     payload["advance_retreat_analysis"] = advance_retreat_analysis
     payload["timing_analysis"] = timing_analysis
+    payload["spirit_sha_analysis"] = spirit_sha_analysis
     payload["completion_chain"] = completion_chain
     payload["advanced_layers"] = advanced_layers()
     payload["six_spirits"] = six_spirits
-    payload["auxiliary_marks"] = auxiliary_marks()
+    payload["auxiliary_marks"] = auxiliary_marks_payload()
     payload["relations"] = relations
     payload["judgment_frame"] = judgment_frame(bool(payload["hexagram"]["moving_lines"]))
     payload["prompt_contract"] = prompt_contract()
