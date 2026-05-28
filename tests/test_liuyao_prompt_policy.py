@@ -29,3 +29,12 @@ def test_liuyao_prompt_requires_templates_and_six_spirits_as_auxiliary_only():
     assert "不能单凭青龙断吉" in PROMPT
     assert "不能单凭白虎断凶" in PROMPT
     assert "不得在 prompt 中编造命中" in PROMPT
+
+
+def test_liuyao_prompt_requires_spirit_roles_and_advanced_layer_order():
+    for text in ["spirit_role_analysis", "completion_chain", "advanced_layers", "原神", "忌神", "仇神", "闲神"]:
+        assert text in PROMPT
+    assert "先看用神，再看原神，再看忌神，再看仇神" in PROMPT
+    assert "动爻必须先按 spirit_role 判断" in PROMPT
+    assert "只有 advanced_layers.enabled 中的层可以作为证据" in PROMPT
+    assert "不得输出具体应期" in PROMPT
