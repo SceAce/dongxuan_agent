@@ -48,7 +48,7 @@
 - 神煞只作辅助加权；文昌、学堂、华盖、桃花、驿马、贵人、禄神、将星、羊刃等不得直接等同文科、理工、专业、职业或结果。
 - 不得强行归为纯文或纯理；若 `discipline_profile.cross_domain` 为 true，应优先按交叉型专业/职业方向解释。
 - 联网检索只能用于解释现代专业实际学习内容、职业任务和现实名称，不得覆盖命盘画像裁决。
-- 现实落点必须回指 `discipline_profile.groups`、`middle_image_scores` 和 `spirit_sha_analysis.active`；神煞证据只能写成辅助增强，不可写成主因。
+- 若有 `discipline_profile`，现实落点必须回指 `discipline_profile.groups` 和 `middle_image_scores`；若有 `spirit_sha_analysis.active`，神煞证据只能写成辅助增强，不可写成主因。
 - 主象必须是证据最多、与用户问题最贴近的一类事件。
 - 次象只有在另一组证据稳定存在时才输出，且最多一个次象。
 - 如果候选冲突，先说明冲突，再给倾向。
