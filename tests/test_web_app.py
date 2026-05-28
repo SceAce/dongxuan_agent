@@ -262,6 +262,16 @@ def test_default_model_timeout_is_long_enough_for_analysis(monkeypatch):
     assert settings.request_timeout_seconds >= 180
 
 
+def test_default_model_output_budget_is_large_enough(monkeypatch):
+    monkeypatch.delenv("DONGXUAN_MAX_OUTPUT_TOKENS", raising=False)
+
+    from dongxuan_agent.web.config import load_settings
+
+    settings = load_settings()
+
+    assert settings.max_output_tokens >= 4096
+
+
 def test_llm_message_requires_numbered_public_analysis_steps():
     from dongxuan_agent.web.llm import _compose_user_message
 
@@ -271,10 +281,49 @@ def test_llm_message_requires_numbered_public_analysis_steps():
     assert "确认前置信息" in message
     assert "分析" in message
     assert "结论" in message
+    assert "结论必须通俗易懂" in message
+    assert "不要堆字段名" in message
+    assert "优先保证结论完整" in message
     assert "不要单列“不确定项”模块" in message
     assert "不要输出隐藏思维链" in message
     assert "1." in message
     assert "2." in message
+
+
+def test_responses_request_sets_large_output_budget(monkeypatch):
+    from dongxuan_agent.web.config import WebSettings
+    from dongxuan_agent.web.llm import OpenAILLMAdapter
+
+    captured = {}
+
+    class FakeResponse:
+        pass
+
+    def fake_post(url, *, headers, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("dongxuan_agent.web.llm.httpx.post", fake_post)
+    settings = WebSettings(
+        access_password=None,
+        llm_provider="openai",
+        openai_api_key="sk-test",
+        openai_base_url="https://aivalux.com",
+        openai_model="gpt-5.5",
+        openai_wire_api="responses",
+        request_timeout_seconds=240,
+        max_question_length=2000,
+        max_output_tokens=8192,
+    )
+
+    adapter = OpenAILLMAdapter(settings)
+    adapter._post_responses(system="bazi", prompt="prompt", context={"question": "问事"})
+
+    assert captured["url"] == "https://aivalux.com/responses"
+    assert captured["json"]["max_output_tokens"] == 8192
+    assert captured["timeout"] == 240
 
 
 def test_frontend_renders_markdown_in_three_stacked_cards():

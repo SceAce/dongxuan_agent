@@ -26,6 +26,7 @@ class OpenAILLMAdapter(LLMAdapter):
         self._model = settings.openai_model
         self._wire_api = settings.openai_wire_api
         self._timeout = settings.request_timeout_seconds
+        self._max_output_tokens = settings.max_output_tokens
 
     def analyze(self, *, system: str, prompt: str, context: dict) -> str:
         messages = [
@@ -58,7 +59,12 @@ class OpenAILLMAdapter(LLMAdapter):
         return httpx.post(
             f"{self._base_url}/chat/completions",
             headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-            json={"model": self._model, "messages": messages, "temperature": 0.2},
+            json={
+                "model": self._model,
+                "messages": messages,
+                "temperature": 0.2,
+                "max_tokens": self._max_output_tokens,
+            },
             timeout=self._timeout,
         )
 
@@ -68,6 +74,7 @@ class OpenAILLMAdapter(LLMAdapter):
             headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
             json={
                 "model": self._model,
+                "max_output_tokens": self._max_output_tokens,
                 "input": [
                     {
                         "role": "system",
@@ -104,9 +111,13 @@ def _compose_user_message(*, system: str, prompt: str, context: dict) -> str:
         "## 分析\n"
         "1. 输出编号化公开分析步骤，逐条列出你引用的 JSON 字段、字段含义、推导方向。\n"
         "2. 每一步必须是可展示给用户的证据链；不要输出隐藏思维链、内部草稿或无字段依据的自由联想。\n\n"
+        "3. 如果篇幅不够，优先压缩分析过程，优先保证结论完整。\n\n"
         "## 结论\n"
-        "1. 给综合判断、主要依据和可行动提醒。\n"
-        "2. 不要单列“不确定项”模块；必要的限制和边界只压缩写在结论最后一句。\n\n"
+        "1. 结论必须通俗易懂，像对普通用户解释一样写。\n"
+        "2. 少用专有名词，不要堆字段名、神煞名、技术字段名；必须使用术语时，用括号用白话解释。\n"
+        "3. 重点回答用户关心的现实问题：大概是什么、偏好还是偏坏、该注意什么、下一步怎么做。\n"
+        "4. 给综合判断、主要依据和可行动提醒。\n"
+        "5. 不要单列“不确定项”模块；必要的限制和边界只压缩写在结论最后一句。\n\n"
         "# Prompt\n"
         f"{prompt.strip()}\n\n"
         "# JSON Context\n"
