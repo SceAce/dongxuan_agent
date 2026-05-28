@@ -8,7 +8,8 @@ def test_derived_lines_merge_line_najia_useful_god_and_strength():
         value="2026-05-28 09:30:00",
     ).to_dict()
 
-    assert payload["schema"] == "liuyao_chart_v3"
+    assert payload["schema"] == "liuyao_chart_v4"
+    assert payload["question_template"]["template_id"] == "career_work"
     line = payload["derived_lines"][2]
     assert line["position"] == 3
     assert line["stem_branch"] == "己亥"
@@ -23,6 +24,7 @@ def test_derived_lines_merge_line_najia_useful_god_and_strength():
     assert line["effective_strength"] in {"very_strong", "strong", "balanced", "weak", "very_weak"}
     assert line["extreme_state"] in {"over_strong", "over_weak", "none"}
     assert line["strength_evidence"]
+    assert line["six_spirit"]["spirit"] == "朱雀"
 
 
 def test_useful_god_analysis_maps_candidates_to_matching_lines():
@@ -77,4 +79,6 @@ def test_judgment_frame_and_prompt_contract_exist():
     ]
     assert "derived_lines" in payload["prompt_contract"]["must_use_fields"]
     assert "useful_god_selection" in payload["prompt_contract"]["must_use_fields"]
-    assert "未实现的六神" in payload["prompt_contract"]["must_not_infer"]
+    assert "question_template" in payload["prompt_contract"]["must_use_fields"]
+    assert "six_spirits" in payload["prompt_contract"]["must_use_fields"]
+    assert "未实现的神煞命中" in payload["prompt_contract"]["must_not_infer"]

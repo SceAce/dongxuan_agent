@@ -21,3 +21,11 @@ def test_liuyao_prompt_requires_v2_fields_and_forbids_unsupported_rules():
 def test_liuyao_prompt_preserves_layered_useful_god_conflicts():
     for text in ["近取诸身", "远取诸象", "layered", "ambiguous", "不能强行压成单一用神"]:
         assert text in PROMPT
+
+
+def test_liuyao_prompt_requires_templates_and_six_spirits_as_auxiliary_only():
+    for text in ["question_template", "six_spirits", "辅助取象，不作主裁决", "青龙必吉", "白虎必凶", "玄武必欺瞒", "auxiliary_marks.enabled"]:
+        assert text in PROMPT
+    assert "不能单凭青龙断吉" in PROMPT
+    assert "不能单凭白虎断凶" in PROMPT
+    assert "不得在 prompt 中编造命中" in PROMPT

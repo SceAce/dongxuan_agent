@@ -164,7 +164,6 @@ def prompt_contract() -> dict:
             "judgment_frame",
         ],
         "must_not_infer": [
-            "未实现的六神",
             "未实现的飞伏",
             "未实现的三合局",
             "未实现的应期",
