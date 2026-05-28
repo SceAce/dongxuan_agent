@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .imagery import build_imagery_context, build_useful_god_selection
 from .relations import branch_relation, element_relation, return_relation_label
 from .strength import BRANCH_ELEMENTS, effective_strength, extreme_state, seasonal_state
 
@@ -7,9 +8,13 @@ from .strength import BRANCH_ELEMENTS, effective_strength, extreme_state, season
 def enrich_payload(payload: dict) -> dict:
     derived_lines = build_derived_lines(payload)
     useful_gods = build_useful_god_analysis(payload, derived_lines)
+    imagery_context = build_imagery_context(payload["input"]["question"], useful_gods["domain"])
+    useful_god_selection = build_useful_god_selection(payload, derived_lines, useful_gods, imagery_context)
     relations = build_relations(payload, derived_lines, useful_gods)
     payload["derived_lines"] = derived_lines
     payload["useful_god_analysis"] = useful_gods
+    payload["imagery_context"] = imagery_context
+    payload["useful_god_selection"] = useful_god_selection
     payload["relations"] = relations
     payload["judgment_frame"] = judgment_frame(bool(payload["hexagram"]["moving_lines"]))
     payload["prompt_contract"] = prompt_contract()
