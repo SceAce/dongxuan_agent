@@ -220,7 +220,6 @@ def prompt_contract() -> dict:
             "judgment_frame",
         ],
         "must_not_infer": [
-            "未实现的三合局",
             "八字旺衰或格局",
             "大六壬四课三传",
         ],
