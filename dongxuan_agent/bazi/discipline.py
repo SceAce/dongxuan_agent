@@ -73,7 +73,7 @@ def build_middle_image_scores(
 ) -> dict[str, dict[str, Any]]:
     scores = {
         image: {
-            "base_score": _number((item or {}).get("base_score", (item or {}).get("final_score", 0.0))),
+            "base_score": _base_score(item or {}),
             "spirit_delta": 0.0,
             "question_delta": 0.0,
             "final_score": 0.0,
@@ -113,6 +113,7 @@ def build_discipline_profile(
     question: str = "",
 ) -> dict[str, Any]:
     groups = [_score_group(name, weights, middle_image_scores) for name, weights in DISCIPLINE_GROUPS.items()]
+    groups = [group for group in groups if group["score"] > 0]
     groups.sort(key=lambda item: (-item["score"], item["name"]))
     cross_domain = _is_cross_domain(groups)
     return {
@@ -225,8 +226,21 @@ def _confidence(score: float, supporting_images: list[str]) -> str:
 
 def _spirit_evidence(hit: dict[str, Any], image: str, delta: float) -> str:
     name = hit.get("name", "神煞")
+    strength = hit.get("strength") or "未列强度"
+    basis = hit.get("basis", hit.get("value", "未列依据"))
     positions = "、".join(hit.get("hit_positions") or [])
-    return f"{name}辅助{image}，命中{positions or '未列位置'}，加权{round(delta, 3)}。"
+    avoid = hit.get("avoid") or "不得由单一神煞直接定专业"
+    return (
+        f"{name}辅助{image}，强度{strength}，依据{basis}，"
+        f"命中{positions or '未列位置'}，加权{round(delta, 3)}；提示：{avoid}。"
+    )
+
+
+def _base_score(item: dict[str, Any]) -> float:
+    for key in ("base_score", "score", "final_score"):
+        if key in item:
+            return _number(item.get(key))
+    return 0.0
 
 
 def _number(value: Any) -> float:

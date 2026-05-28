@@ -1,4 +1,90 @@
-from dongxuan_agent.bazi.discipline import build_discipline_profile
+import pytest
+
+from dongxuan_agent.bazi.discipline import build_discipline_profile, build_middle_image_scores
+
+
+def test_middle_image_scores_accepts_score_shaped_base_and_preserves_evidence():
+    result = build_middle_image_scores(
+        {"信息处理": {"score": 1.2, "evidence": ["结构证据"]}},
+        {},
+    )
+
+    assert result["信息处理"]["base_score"] == 1.2
+    assert result["信息处理"]["final_score"] == 1.2
+    assert result["信息处理"]["evidence"] == ["结构证据"]
+
+
+def test_middle_image_scores_caps_individual_spirit_hit():
+    result = build_middle_image_scores(
+        {"信息处理": {"base_score": 1.0}},
+        {
+            "active": [
+                {
+                    "name": "文昌",
+                    "supports": ["信息处理"],
+                    "score_delta": 0.6,
+                    "hit_positions": ["年柱"],
+                    "strength": "强",
+                    "basis": "命中",
+                    "avoid": "不直接定专业",
+                }
+            ]
+        },
+    )
+
+    assert result["信息处理"]["spirit_delta"] <= 0.2
+
+
+def test_middle_image_scores_caps_total_spirit_delta_per_image():
+    result = build_middle_image_scores(
+        {"信息处理": {"base_score": 1.0}},
+        {
+            "active": [
+                {"name": "文昌", "supports": ["信息处理"], "score_delta": 0.2},
+                {"name": "学堂", "supports": ["信息处理"], "score_delta": 0.2},
+                {"name": "词馆", "supports": ["信息处理"], "score_delta": 0.2},
+            ]
+        },
+    )
+
+    assert result["信息处理"]["spirit_delta"] <= 0.35
+
+
+def test_middle_image_scores_caps_single_spirit_hit_without_structural_base():
+    result = build_middle_image_scores(
+        {},
+        {"active": [{"name": "文昌", "supports": ["信息处理"], "score_delta": 0.2}]},
+    )
+
+    assert result["信息处理"]["base_score"] == 0
+    assert result["信息处理"]["spirit_delta"] <= 0.08
+
+
+def test_middle_image_scores_spirit_evidence_keeps_prompt_safety_context():
+    result = build_middle_image_scores(
+        {"信息处理": {"base_score": 1.0}},
+        {
+            "active": [
+                {
+                    "name": "文昌",
+                    "supports": ["信息处理"],
+                    "score_delta": 0.12,
+                    "hit_positions": ["年柱", "时柱"],
+                    "strength": "中",
+                    "basis": "日主见文昌",
+                    "avoid": "不直接定专业",
+                }
+            ]
+        },
+    )
+
+    evidence = " ".join(result["信息处理"]["evidence"])
+    assert "文昌" in evidence
+    assert "中" in evidence
+    assert "日主见文昌" in evidence
+    assert "年柱、时柱" in evidence
+    assert "0.12" in evidence
+    assert "不直接" in evidence
 
 
 def test_discipline_profile_scores_cross_domain_when_groups_are_close():
@@ -44,3 +130,12 @@ def test_discipline_profile_has_structured_group_evidence():
             "weakening_factors",
             "confidence",
         }
+
+
+@pytest.mark.parametrize("middle_scores", [{}, {"未知画像": {"final_score": 2.0}}])
+def test_discipline_profile_filters_empty_unsupported_groups(middle_scores):
+    result = build_discipline_profile(middle_scores)
+
+    assert result["groups"] == []
+    assert result["cross_domain"] is False
+    assert result["recommended_mode"].startswith("证据不足")
