@@ -114,7 +114,55 @@ QUESTION_TEMPLATES = {
 MUST_NOT_MIX = [
     "模板只决定取象入口，不决定最终成败。",
     "模板不能覆盖 useful_god_selection 的分层结果。",
+    "模板只能做领域翻译，不能用行业先验覆盖卦内证据。",
     "模板不能引入八字或大六壬逻辑。",
+]
+
+REAL_IMAGE_RULES = [
+    "先抓实象：先列用神、世应、月日、旬空、动变、飞伏、三合、进退、应期候选和神煞等 JSON 已给出的硬证据。",
+    "实象优先于领域联想：领域语境只能翻译六亲和爻象，不得替代用神链、月日、世应、动变与 completion_chain。",
+    "冲突也是实象：有利证据和阻断证据同时存在时，保留先后、内外、显隐和强弱差异，不强压成单一结论。",
+]
+
+TIME_LAYER_RULES = [
+    {
+        "layer": "already_formed",
+        "name": "已然",
+        "evidence": "月建、静卦格局、用神持世/临应、上卦且有力的主象。",
+        "instruction": "月建可表示占前或当月已经形成的背景；静卦优先说明既成格局，不直接推出未来剧烈变化。",
+    },
+    {
+        "layer": "current_trigger",
+        "name": "当前",
+        "evidence": "日辰、日冲日合、日生克、旬空压力、世应当前关系。",
+        "instruction": "日辰可表示眼前触发或近事变化，用于判断当前损益、压力、兑现或冲突。",
+    },
+    {
+        "layer": "future_development",
+        "name": "未然",
+        "evidence": "动爻、变爻、回头生克、伏神出伏、三合补缺、进退神、timing_analysis.candidates。",
+        "instruction": "未来只从动变、飞伏、补缺、进退和应期候选推出；不得脱离 JSON 自行造应期。",
+    },
+]
+
+ALREADY_FUTURE_SPLIT = {
+    "already_formed": "说明卦中已经存在、已经发生或占前形成的部分。",
+    "current_trigger": "说明眼前正在触发的得失、压力、兑现、回撤或冲突。",
+    "future_development": "说明后续可能被引动、填实、冲开、推进或转化的部分。",
+    "reversal_patterns": [
+        "先有利后受损",
+        "先受阻后转通",
+        "账面有而未兑现",
+        "旺而被制",
+        "弱而得救",
+        "显处有利而暗处受伤",
+    ],
+}
+
+DOMAIN_TRANSLATION_RULES = [
+    "领域只翻译六亲象和爻象的语言，不改变六亲、用神、原忌仇闲神和月日动变关系。",
+    "同一六亲在不同问题中可有不同表述，但必须来自 question_template 的主象、辅助象或 JSON 已给字段。",
+    "不得用行业先验覆盖卦内证据；如果领域联想与实象冲突，优先保留实象并标记不确定。",
 ]
 
 
@@ -132,6 +180,10 @@ def build_question_template(domain: str, question: str | None = None) -> dict:
             "auxiliary_images": [],
             "conflict_rules": [],
             "secondary_templates": [],
+            "real_image_rules": REAL_IMAGE_RULES,
+            "time_layer_rules": TIME_LAYER_RULES,
+            "already_future_split": ALREADY_FUTURE_SPLIT,
+            "domain_translation_rules": DOMAIN_TRANSLATION_RULES,
             "must_not_mix": MUST_NOT_MIX,
         }
     return {
@@ -142,5 +194,9 @@ def build_question_template(domain: str, question: str | None = None) -> dict:
         "auxiliary_images": list(template["auxiliary_images"]),
         "conflict_rules": list(template["conflict_rules"]),
         "secondary_templates": [],
+        "real_image_rules": REAL_IMAGE_RULES,
+        "time_layer_rules": TIME_LAYER_RULES,
+        "already_future_split": ALREADY_FUTURE_SPLIT,
+        "domain_translation_rules": DOMAIN_TRANSLATION_RULES,
         "must_not_mix": MUST_NOT_MIX,
     }

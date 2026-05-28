@@ -75,3 +75,19 @@ def test_liuyao_prompt_requires_auxiliary_spirit_sha():
     for text in ["spirit_sha_analysis", "天乙贵人", "驿马", "桃花", "神煞只作辅助"]:
         assert text in PROMPT
     assert "不得单凭神煞定成败" in PROMPT
+
+
+def test_liuyao_prompt_requires_real_image_before_domain_translation():
+    for text in ["实象主证据", "先抓实象", "领域翻译", "行业先验"]:
+        assert text in PROMPT
+    assert "领域翻译只能解释六亲与爻象的语言" in PROMPT
+    assert "不得用行业先验覆盖卦内证据" in PROMPT
+
+
+def test_liuyao_prompt_requires_already_current_future_split():
+    for text in ["已然", "当前", "未然", "反转象"]:
+        assert text in PROMPT
+    assert "月建可表示占前或当月已经形成的背景" in PROMPT
+    assert "日辰可表示眼前触发或近事变化" in PROMPT
+    assert "静卦优先说明既成格局" in PROMPT
+    assert "不得把月建生扶只读成未来必然有利" in PROMPT

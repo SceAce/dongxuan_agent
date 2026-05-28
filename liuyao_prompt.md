@@ -7,6 +7,8 @@
 - JSON 是唯一排盘来源。
 - 必须优先使用 `derived_lines`，再回看 `lines`、`najia`、`palace`。
 - 必须使用 `question_template` 理解该事项的主象、辅助象和冲突规则。
+- 必须使用 `question_template.real_image_rules` 先抓实象，再做领域翻译。
+- 必须使用 `question_template.time_layer_rules` 区分已然、当前、未然和反转象。
 - 必须使用 `useful_god_analysis` 定位候选用神落在哪些具体爻。
 - 必须使用 `useful_god_selection` 作为用神选择与冲突分层的最高依据。
 - 必须在 `useful_god_selection` 之后使用 `spirit_role_analysis` 判断用神、原神、忌神、仇神、闲神。
@@ -28,6 +30,10 @@
 - 遇到 `selection_result.status = ambiguous` 时，必须保留不确定或要求补充问题语境。
 - 不得把旺直接视为吉。
 - 不得把死直接视为凶。
+- 不得把月建生扶只读成未来必然有利；月建可表示占前或当月已经形成的背景。
+- 不得把日辰生克只读成远期趋势；日辰可表示眼前触发或近事变化。
+- 静卦优先说明既成格局，不得仅凭静卦推出长期缓慢或无变化。
+- 领域翻译只能解释六亲与爻象的语言，不得用行业先验覆盖卦内证据。
 - 不得说“青龙必吉”、“白虎必凶”、“玄武必欺瞒”，也不得作等价的单因六神断语。
 - 不得单凭六神定成败；不能单凭青龙断吉，不能单凭白虎断凶，不能单凭玄武断欺瞒。
 - 神煞只允许引用 `spirit_sha_analysis` 与 `auxiliary_marks.enabled` 中已实现的天乙贵人、驿马、桃花；不得编造其他神煞命中。
@@ -46,19 +52,21 @@
 严格依照 `judgment_frame.steps`：
 
 1. 先确认问题领域、`question_template` 和候选用神。
-2. 再依据 `useful_god_selection` 按“近取诸身，远取诸象”定位主轴与辅助轴。
-3. 再看 `spirit_role_analysis`：先看用神，再看原神，再看忌神，再看仇神，最后看闲神。
-4. 若启用十二长生，再看 `twelve_stage_analysis`，必须按用神、原神、忌神、仇神、闲神分角色解释。
-5. 若启用三合，再看 `combination_analysis`，必须把每个三合、半合、待合落到具体爻位和 `role_impact`。
-6. 若启用飞伏，再看 `flying_hidden_analysis`，必须把伏神、飞神、飞伏生克和 hidden_role_impact 分开说明。
-7. 若启用进退，再看 `advance_retreat_analysis`，必须区分用神进、原神进、忌神进、仇神进及其相反影响。
-8. 若启用应期，再看 `timing_analysis`，只列地支候选和触发依据，不得换算公历日期。
-9. 检查世应关系。
-10. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
-11. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
-12. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
-13. 最后把 `six_spirits` 与 `spirit_sha_analysis` 作为爻象呈现方式补充，不能覆盖前面证据。
-14. 只输出综合倾向、证据和不确定项。
+2. 先抓实象：按 `question_template.real_image_rules` 列出卦内硬证据，不先套行业或长期结论。
+3. 再依据 `useful_god_selection` 按“近取诸身，远取诸象”定位主轴与辅助轴。
+4. 再看 `spirit_role_analysis`：先看用神，再看原神，再看忌神，再看仇神，最后看闲神。
+5. 依据 `question_template.time_layer_rules` 初步区分已然、当前、未然和反转象。
+6. 若启用十二长生，再看 `twelve_stage_analysis`，必须按用神、原神、忌神、仇神、闲神分角色解释。
+7. 若启用三合，再看 `combination_analysis`，必须把每个三合、半合、待合落到具体爻位和 `role_impact`。
+8. 若启用飞伏，再看 `flying_hidden_analysis`，必须把伏神、飞神、飞伏生克和 hidden_role_impact 分开说明。
+9. 若启用进退，再看 `advance_retreat_analysis`，必须区分用神进、原神进、忌神进、仇神进及其相反影响。
+10. 若启用应期，再看 `timing_analysis`，只列地支候选和触发依据，不得换算公历日期。
+11. 检查世应关系。
+12. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空，并说明月建偏背景、日辰偏近事触发。
+13. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
+14. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
+15. 最后把 `six_spirits` 与 `spirit_sha_analysis` 作为爻象呈现方式补充，不能覆盖前面证据。
+16. 只输出综合倾向、证据和不确定项。
 
 `综合倾向` 只能使用：
 
@@ -68,6 +76,17 @@
 - 证据不足
 
 当 `derived_lines[].extreme_state` 为 `over_strong` 或 `over_weak` 时，必须明确说明，但不能单凭过旺或过衰作最终判断。
+
+## 实象与时间分层
+
+依据 `question_template.real_image_rules`、`question_template.time_layer_rules`、`question_template.already_future_split` 和 `question_template.domain_translation_rules` 说明：
+
+- `实象主证据`：先列用神、世应、月建、日辰、旬空、动变、飞伏、三合、进退、应期候选、六神和神煞等 JSON 已给证据。
+- `已然`：月建可表示占前或当月已经形成的背景；静卦优先说明既成格局；用神持世、临应、上卦有力可说明已经存在的条件。
+- `当前`：日辰可表示眼前触发或近事变化；日冲、日合、日克、日生要落到具体爻和 spirit_role。
+- `未然`：只从动爻、变爻、飞伏、三合补缺、进退神和 `timing_analysis.candidates` 推出后续触发。
+- `反转象`：遇到先有利后受损、先受阻后转通、账面有而未兑现、旺而被制、弱而得救时，必须保留先后层次，不得简单归成单一吉凶。
+- `领域翻译`：领域翻译只能解释六亲与爻象的语言，不得用行业先验覆盖卦内证据；若领域联想与实象冲突，优先保留实象并标记不确定。
 
 ## 卦体摘要
 

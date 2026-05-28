@@ -13,6 +13,18 @@ def test_career_work_template_selects_main_and_auxiliary_images():
     assert "模板只决定取象入口，不决定最终成败。" in template["must_not_mix"]
 
 
+def test_templates_include_general_real_image_and_time_layer_strategy():
+    template = build_question_template("财运/交易", "问最近财运如何")
+
+    assert "real_image_rules" in template
+    assert any("先抓实象" in rule for rule in template["real_image_rules"])
+    assert any(rule["layer"] == "already_formed" and "月建" in rule["evidence"] for rule in template["time_layer_rules"])
+    assert any(rule["layer"] == "current_trigger" and "日辰" in rule["evidence"] for rule in template["time_layer_rules"])
+    assert any(rule["layer"] == "future_development" and "动爻" in rule["evidence"] for rule in template["time_layer_rules"])
+    assert any("先有利后受损" in item for item in template["already_future_split"]["reversal_patterns"])
+    assert any("领域只翻译六亲象" in rule for rule in template["domain_translation_rules"])
+
+
 def test_unknown_domain_returns_uncategorized_template_contract():
     template = build_question_template("综合/未分类", "随便问问")
 
@@ -21,3 +33,5 @@ def test_unknown_domain_returns_uncategorized_template_contract():
     assert template["main_images"] == []
     assert template["auxiliary_images"] == []
     assert template["secondary_templates"] == []
+    assert template["real_image_rules"]
+    assert template["time_layer_rules"]
