@@ -10,6 +10,7 @@
 - 必须使用 `useful_god_analysis` 定位候选用神落在哪些具体爻。
 - 必须使用 `useful_god_selection` 作为用神选择与冲突分层的最高依据。
 - 必须在 `useful_god_selection` 之后使用 `spirit_role_analysis` 判断用神、原神、忌神、仇神、闲神。
+- 若 `twelve_stages` 在 `advanced_layers.enabled` 中，必须使用 `derived_lines[].twelve_stage` 与 `twelve_stage_analysis`，且十二长生必须先按 spirit_role 解释。
 - 必须使用 `completion_chain` 作为成事、阻断、反复或证据不足的主证据层。
 - 必须遵守 `advanced_layers.order`；只有 advanced_layers.enabled 中的层可以作为证据。
 - 必须使用 `six_spirits` 作为具体爻上的辅助取象，不作主裁决。
@@ -28,7 +29,7 @@
 - 若 `timing` 不在 `advanced_layers.enabled` 中，不得输出具体应期、日期、月份或年份。
 - 若 `flying_hidden` 不在 `advanced_layers.enabled` 中，不得使用飞伏补隐藏用神。
 - 若 `three_combination` 不在 `advanced_layers.enabled` 中，不得使用三合局作证据。
-- 若 `twelve_stages` 不在 `advanced_layers.enabled` 中，不得使用十二长生作证据。
+- 若 `twelve_stages` 不在 `advanced_layers.enabled` 中，不得使用十二长生作证据；若已启用，也只能作为状态辅助，不直接定吉凶。
 - 若 `advance_retreat` 不在 `advanced_layers.enabled` 中，不得使用进退神作证据。
 - 不得使用八字旺衰、格局、调候、病药、大运流年等逻辑。
 - 不得使用大六壬四课三传、天将或大六壬神煞命中逻辑。
@@ -42,12 +43,13 @@
 1. 先确认问题领域、`question_template` 和候选用神。
 2. 再依据 `useful_god_selection` 按“近取诸身，远取诸象”定位主轴与辅助轴。
 3. 再看 `spirit_role_analysis`：先看用神，再看原神，再看忌神，再看仇神，最后看闲神。
-4. 检查世应关系。
-5. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
-6. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
-7. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
-8. 最后把 `six_spirits` 作为爻象呈现方式补充，不能覆盖前面证据。
-9. 只输出综合倾向、证据和不确定项。
+4. 若启用十二长生，再看 `twelve_stage_analysis`，必须按用神、原神、忌神、仇神、闲神分角色解释。
+5. 检查世应关系。
+6. 检查旺衰与月日：先看旺相休囚死，再看日辰生克冲合与旬空。
+7. 检查动变作用：动爻必须先按 spirit_role 判断，再看对世、应、候选用神的作用，以及变爻回头生克。
+8. 使用 `completion_chain` 汇总支持、阻断、混合和未决证据。
+9. 最后把 `six_spirits` 作为爻象呈现方式补充，不能覆盖前面证据。
+10. 只输出综合倾向、证据和不确定项。
 
 `综合倾向` 只能使用：
 
@@ -95,13 +97,14 @@
 
 ## 旺衰与月日
 
-依据 `derived_lines[].month_state`、`derived_lines[].day_state`、`relations.month_day`、`spirit_role_analysis` 说明：
+依据 `derived_lines[].month_state`、`derived_lines[].day_state`、`derived_lines[].twelve_stage`、`relations.month_day`、`spirit_role_analysis`、`twelve_stage_analysis` 说明：
 
 - 月令下的旺相休囚死。
 - 日辰对世爻、应爻、候选用神的生克冲合。
 - 旬空影响。
 - `effective_strength` 与 `extreme_state`。
 - 角色化旺衰：用神是否有力，原神是否能生，用神是否受忌神压制，仇神是否助阻。
+- 十二长生只能说明状态辅助，不直接定吉凶；例如用神临官/帝旺为用神状态支持，忌神临官/帝旺为阻断侧状态支持。
 
 不得把旺直接视为吉，不得把死直接视为凶；旺衰只说明爻是否有力。
 
@@ -123,7 +126,7 @@
 - 先列证据 bullets。
 - 再给一个倾向标签：偏有利、偏不利、反复/未定、证据不足。
 - 倾向必须说明来自哪些字段。
-- 优先使用 `completion_chain.tendency` 和 `completion_chain` 的 supporting/blocking/mixed/unresolved 因素。
+- 优先使用 `completion_chain.tendency` 和 `completion_chain` 的 supporting/blocking/mixed/unresolved 因素；若其中包含十二长生因素，必须仍按 spirit_role 解释。
 - 六神只能作为旁证；若六神象意与六亲、用神、世应、月日、动变冲突，优先后者。
 - 不得使用未实现规则补强结论。
 
@@ -135,6 +138,6 @@
 - 六神已实现为辅助取象，不作主裁决。
 - 神煞只保留 `auxiliary_marks` 预留字段；若 `auxiliary_marks.enabled` 为空，不得编造驿马、桃花、贵人等命中。
 - `advanced_layers.reserved` 中的层不能作为证据。
-- 飞伏、三合局、墓绝长生、进退神、应期未实现；不得输出具体应期。
+- 三合局、飞伏、进退神、应期、神煞未实现；不得输出具体应期。
 - 若候选用神缺失且伏神未实现，只能标记未决。
 - 若证据互相冲突，应保留为反复/未定。

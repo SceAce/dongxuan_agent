@@ -38,3 +38,10 @@ def test_liuyao_prompt_requires_spirit_roles_and_advanced_layer_order():
     assert "动爻必须先按 spirit_role 判断" in PROMPT
     assert "只有 advanced_layers.enabled 中的层可以作为证据" in PROMPT
     assert "不得输出具体应期" in PROMPT
+
+
+def test_liuyao_prompt_requires_role_aware_twelve_stages():
+    for text in ["twelve_stage", "twelve_stage_analysis", "十二长生", "状态辅助，不直接定吉凶"]:
+        assert text in PROMPT
+    assert "十二长生必须先按 spirit_role 解释" in PROMPT
+    assert "twelve_stages" in PROMPT
