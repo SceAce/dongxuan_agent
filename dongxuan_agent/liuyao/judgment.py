@@ -2,19 +2,27 @@ from __future__ import annotations
 
 from .imagery import build_imagery_context, build_useful_god_selection
 from .relations import branch_relation, element_relation, return_relation_label
+from .six_spirits import assign_six_spirits
 from .strength import BRANCH_ELEMENTS, effective_strength, extreme_state, seasonal_state
+from .templates import build_question_template
 
 
 def enrich_payload(payload: dict) -> dict:
     derived_lines = build_derived_lines(payload)
+    question_template = build_question_template(payload["question_context"]["domain"], payload["input"]["question"])
     useful_gods = build_useful_god_analysis(payload, derived_lines)
     imagery_context = build_imagery_context(payload["input"]["question"], useful_gods["domain"])
-    useful_god_selection = build_useful_god_selection(payload, derived_lines, useful_gods, imagery_context)
+    useful_god_selection = build_useful_god_selection(payload, derived_lines, useful_gods, imagery_context, question_template)
+    six_spirits = assign_six_spirits(payload["calendar"]["day_gz"], derived_lines)
+    _attach_six_spirits_to_lines(derived_lines, six_spirits)
     relations = build_relations(payload, derived_lines, useful_gods)
     payload["derived_lines"] = derived_lines
+    payload["question_template"] = question_template
     payload["useful_god_analysis"] = useful_gods
     payload["imagery_context"] = imagery_context
     payload["useful_god_selection"] = useful_god_selection
+    payload["six_spirits"] = six_spirits
+    payload["auxiliary_marks"] = auxiliary_marks()
     payload["relations"] = relations
     payload["judgment_frame"] = judgment_frame(bool(payload["hexagram"]["moving_lines"]))
     payload["prompt_contract"] = prompt_contract()
@@ -150,6 +158,8 @@ def prompt_contract() -> dict:
             "derived_lines",
             "useful_god_analysis",
             "useful_god_selection",
+            "question_template",
+            "six_spirits",
             "relations",
             "judgment_frame",
         ],
@@ -158,6 +168,7 @@ def prompt_contract() -> dict:
             "未实现的飞伏",
             "未实现的三合局",
             "未实现的应期",
+            "未实现的神煞命中",
             "八字旺衰或格局",
             "大六壬四课三传",
         ],
@@ -170,6 +181,25 @@ def prompt_contract() -> dict:
             "综合倾向",
             "不确定项",
         ],
+    }
+
+
+def _attach_six_spirits_to_lines(derived_lines: list[dict], six_spirits: dict) -> None:
+    by_position = {line["position"]: line for line in six_spirits["lines"]}
+    for line in derived_lines:
+        spirit = by_position[line["position"]]
+        line["six_spirit"] = {
+            "spirit": spirit["spirit"],
+            "imagery": spirit["imagery"],
+            "cautions": spirit["cautions"],
+        }
+
+
+def auxiliary_marks() -> dict:
+    return {
+        "enabled": [],
+        "reserved": ["驿马", "桃花", "贵人"],
+        "scope": "预留字段；当前不计算神煞，不得在 prompt 中编造命中。",
     }
 
 

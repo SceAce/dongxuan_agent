@@ -22,10 +22,13 @@ def test_work_offer_contract_selection_is_layered():
     ).to_dict()
 
     selection = payload["useful_god_selection"]
+    assert payload["question_template"]["template_id"] == "career_work"
     assert selection["principle"] == "近取诸身，远取诸象"
     assert selection["selection_result"]["status"] == "layered"
     assert selection["selection_result"]["main_useful_god"] == "官鬼"
     assert "父母" in selection["selection_result"]["auxiliary_useful_gods"]
     assert selection["near_self_focus"][0]["role"] == "世"
     assert {item["six_relative"] for item in selection["far_symbol_focus"]} >= {"官鬼", "父母"}
+    assert selection["far_symbol_focus"][0]["source"] in {"template_main", "token_match"}
+    assert any(item.get("source") == "template_auxiliary" and item["six_relative"] == "父母" for item in selection["far_symbol_focus"])
     assert "不是互斥" in selection["conflicts"][0]["interpretation_hint"]

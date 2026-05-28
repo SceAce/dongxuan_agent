@@ -88,6 +88,7 @@ def build_useful_god_selection(
     derived_lines: list[dict],
     useful_god_analysis: dict,
     imagery_context: dict,
+    question_template: dict | None = None,
 ) -> dict:
     shi = next(line for line in derived_lines if line["is_shi"])
     near_self_focus = [
@@ -101,7 +102,7 @@ def build_useful_god_selection(
             "cautions": _line_cautions(shi),
         }
     ]
-    far_symbol_focus = _far_symbol_focus(useful_god_analysis, imagery_context)
+    far_symbol_focus = _far_symbol_focus(useful_god_analysis, imagery_context, question_template)
     conflicts = _conflicts(far_symbol_focus)
     relatives = [item["six_relative"] for item in far_symbol_focus]
     main = _main_useful_god(relatives, useful_god_analysis)
@@ -134,10 +135,26 @@ def _line_cautions(line: dict) -> list[str]:
     return cautions
 
 
-def _far_symbol_focus(useful_god_analysis: dict, imagery_context: dict) -> list[dict]:
+def _far_symbol_focus(useful_god_analysis: dict, imagery_context: dict, question_template: dict | None = None) -> list[dict]:
     by_relative = {candidate["six_relative"]: candidate for candidate in useful_god_analysis["candidates"]}
     result = []
     seen = set()
+    if question_template:
+        for item, source in _template_focus_items(question_template):
+            relative = item["six_relative"]
+            if relative == "世应" or relative in seen or relative not in by_relative:
+                continue
+            candidate = by_relative[relative]
+            result.append(
+                {
+                    "six_relative": relative,
+                    "image": item["image"],
+                    "matching_lines": [line["position"] for line in candidate["matching_lines"]],
+                    "reason": item["reason"],
+                    "source": source,
+                }
+            )
+            seen.add(relative)
     for match in imagery_context["matches"]:
         relative = match["six_relative"]
         if relative in seen or relative not in by_relative:
@@ -149,10 +166,17 @@ def _far_symbol_focus(useful_god_analysis: dict, imagery_context: dict) -> list[
                 "image": match["image"],
                 "matching_lines": [line["position"] for line in candidate["matching_lines"]],
                 "reason": f"{match['token']}以{relative}之{match['image']}为象",
+                "source": "token_match",
             }
         )
         seen.add(relative)
     return result
+
+
+def _template_focus_items(question_template: dict) -> list[tuple[dict, str]]:
+    items = [(item, "template_main") for item in question_template.get("main_images", [])]
+    items.extend((item, "template_auxiliary") for item in question_template.get("auxiliary_images", []))
+    return items
 
 
 def _conflicts(far_symbol_focus: list[dict]) -> list[dict]:
