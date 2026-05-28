@@ -125,15 +125,24 @@ def _positions(payload: dict[str, Any]) -> list[dict[str, str]]:
     for pillar in payload.get("pillars", []):
         positions.append({"location": pillar["name"] + "干", "value": pillar["stem"], "value_type": "stem"})
         positions.append({"location": pillar["name"] + "支", "value": pillar["branch"], "value_type": "branch"})
-    current_luck = (payload.get("analysis_hints") or {}).get("current_luck") or {}
+    analysis_hints = _dict_or_empty(payload.get("analysis_hints"))
+    current_luck = _dict_or_empty(analysis_hints.get("current_luck"))
     if current_luck.get("ganzhi"):
         positions.append({"location": "当前大运干", "value": current_luck["ganzhi"][0], "value_type": "stem"})
         positions.append({"location": "当前大运支", "value": current_luck["ganzhi"][1], "value_type": "branch"})
-    flow_year = (payload.get("analysis_hints") or {}).get("flow_year") or {}
+    flow_year = _dict_or_empty(analysis_hints.get("flow_year"))
     if flow_year.get("ganzhi"):
         positions.append({"location": "目标流年干", "value": flow_year["ganzhi"][0], "value_type": "stem"})
         positions.append({"location": "目标流年支", "value": flow_year["ganzhi"][1], "value_type": "branch"})
     return positions
+
+
+def _dict_or_empty(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if value is None:
+        return {}
+    raise TypeError(f"expected dict payload section, got {type(value).__name__}")
 
 
 def _active_hit(rule: dict[str, str], positions: list[dict[str, str]]) -> dict[str, Any]:

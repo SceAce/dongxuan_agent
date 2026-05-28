@@ -49,5 +49,16 @@ def test_bazi_spirit_sha_hits_current_luck_and_flow_year_positions():
 def test_bazi_spirit_sha_omits_non_hits_from_active_scoring():
     result = build_bazi_spirit_sha_analysis(_payload())
 
+    assert result["active"]
     assert all(item["hit_positions"] for item in result["active"])
     assert all(item["score_delta"] <= 0.2 for item in result["active"])
+
+
+def test_bazi_spirit_sha_malformed_analysis_hints_soft_fails():
+    payload = _payload()
+    payload["analysis_hints"] = "bad"
+
+    result = build_bazi_spirit_sha_analysis(payload)
+
+    assert result["active"] == []
+    assert result["uncertainty"]
