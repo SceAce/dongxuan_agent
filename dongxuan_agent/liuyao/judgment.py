@@ -6,6 +6,7 @@ from .six_spirits import assign_six_spirits
 from .spirit_roles import advanced_layers, build_completion_chain, build_spirit_role_analysis
 from .strength import BRANCH_ELEMENTS, effective_strength, extreme_state, seasonal_state
 from .templates import build_question_template
+from .twelve_stages import attach_twelve_stages, build_twelve_stage_analysis
 
 
 def enrich_payload(payload: dict) -> dict:
@@ -15,7 +16,9 @@ def enrich_payload(payload: dict) -> dict:
     imagery_context = build_imagery_context(payload["input"]["question"], useful_gods["domain"])
     useful_god_selection = build_useful_god_selection(payload, derived_lines, useful_gods, imagery_context, question_template)
     spirit_role_analysis = build_spirit_role_analysis(derived_lines, useful_god_selection)
-    completion_chain = build_completion_chain(derived_lines, spirit_role_analysis, useful_god_selection)
+    attach_twelve_stages(derived_lines)
+    twelve_stage_analysis = build_twelve_stage_analysis(derived_lines)
+    completion_chain = build_completion_chain(derived_lines, spirit_role_analysis, useful_god_selection, twelve_stage_analysis)
     six_spirits = assign_six_spirits(payload["calendar"]["day_gz"], derived_lines)
     _attach_six_spirits_to_lines(derived_lines, six_spirits)
     relations = build_relations(payload, derived_lines, useful_gods)
@@ -25,6 +28,7 @@ def enrich_payload(payload: dict) -> dict:
     payload["imagery_context"] = imagery_context
     payload["useful_god_selection"] = useful_god_selection
     payload["spirit_role_analysis"] = spirit_role_analysis
+    payload["twelve_stage_analysis"] = twelve_stage_analysis
     payload["completion_chain"] = completion_chain
     payload["advanced_layers"] = advanced_layers()
     payload["six_spirits"] = six_spirits
@@ -165,6 +169,7 @@ def prompt_contract() -> dict:
             "useful_god_analysis",
             "useful_god_selection",
             "spirit_role_analysis",
+            "twelve_stage_analysis",
             "completion_chain",
             "advanced_layers",
             "question_template",
