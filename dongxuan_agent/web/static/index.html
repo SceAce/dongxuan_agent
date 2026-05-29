@@ -344,6 +344,7 @@
           <label>
             访问密码
             <input name="password" type="password" autocomplete="current-password" />
+            <span class="readonly">如果第一次使用请设置密码，直接填入密码框即可；以后用同一个密码查看自己的对话。管理员可输入 sudo 查看全部。</span>
           </label>
           <label>
             时间
@@ -473,9 +474,10 @@
       document.querySelector("#tab-daliuren").addEventListener("click", () => switchSystem("daliuren"));
       document.querySelector("#new-conversation").addEventListener("click", () => createConversation());
       document.querySelector("#delete-conversation").addEventListener("click", () => deleteConversation(state.activeConversationId));
+      form.password.addEventListener("change", () => loadConversations());
 
       loadConversations().catch((error) => {
-        renderAnalysisCards(`## 结论\n<span class="error">${escapeHtml(error.message)}</span>`);
+        renderAnalysisCards(`## 结论\n${error.message}`);
       });
 
       fetch("/api/health")
@@ -489,6 +491,10 @@
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (!passwordValue()) {
+          renderAnalysisCards(`## 结论\n${passwordHelpText()}`);
+          return;
+        }
         submit.disabled = true;
         await saveActiveConversation();
         renderAnalysisCards("分析中...\n\n大模型会先生成编号化公开分析步骤，再给综合判断。复杂盘面可能需要 1-4 分钟。");
@@ -574,10 +580,22 @@
       }
 
       async function loadConversations() {
-        const response = await fetch("/api/cases");
+        if (!passwordValue()) {
+          state.conversations = [];
+          state.activeConversationId = null;
+          conversationList.innerHTML = `<span class="readonly">${escapeHtml(passwordHelpText())}</span>`;
+          nodeList.innerHTML = '<span class="readonly">暂无历史节点</span>';
+          renderAnalysisCards(`## 结论\n${passwordHelpText()}`);
+          return;
+        }
+        const response = await fetch("/api/cases/list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: passwordValue() }),
+        });
         state.conversations = response.ok ? await response.json() : [];
         if (!state.conversations.length) {
-          const created = await postJson("/api/cases", buildConversation());
+          const created = await postJson("/api/cases", { ...buildConversation(), password: passwordValue() });
           state.conversations = [created];
         }
         state.activeConversationId = state.conversations[0].id;
@@ -622,8 +640,12 @@
       }
 
       async function createConversation() {
+        if (!passwordValue()) {
+          renderAnalysisCards(`## 结论\n${passwordHelpText()}`);
+          return;
+        }
         await saveActiveConversation();
-        const conversation = await postJson("/api/cases", buildConversation({ title: `对话 ${state.conversations.length + 1}` }));
+        const conversation = await postJson("/api/cases", { ...buildConversation({ title: `对话 ${state.conversations.length + 1}` }), password: passwordValue() });
         state.conversations.unshift(conversation);
         state.activeConversationId = conversation.id;
         applyActiveConversation();
@@ -661,7 +683,7 @@
 
       async function saveActiveConversation(overrides = {}) {
         const conversation = getActiveConversation();
-        if (!conversation) {
+        if (!conversation || !passwordValue()) {
           return;
         }
         conversation.system = state.system;
@@ -678,7 +700,11 @@
         if (!state.activeConversationId) {
           return;
         }
-        const response = await fetch(`/api/cases/${encodeURIComponent(state.activeConversationId)}`);
+        const response = await fetch(`/api/cases/${encodeURIComponent(state.activeConversationId)}/get`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: passwordValue() }),
+        });
         const updated = await parseResponse(response);
         if (!response.ok) {
           throw new Error(updated.detail || `HTTP ${response.status}`);
@@ -785,6 +811,14 @@
           return question.slice(0, 18);
         }
         return conversation.system === "daliuren" ? "大六壬对话" : "八字对话";
+      }
+
+      function passwordValue() {
+        return emptyToNull(form.password.value);
+      }
+
+      function passwordHelpText() {
+        return "请输入访问密码。如果第一次使用请设置密码，直接填入密码框即可；之后使用同一个密码只能看到自己的对话。管理员密码 sudo 可查看全部。";
       }
 
       function renderConversationList() {

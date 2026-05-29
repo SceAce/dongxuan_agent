@@ -22,11 +22,13 @@ class WebSettings:
     max_question_length: int
     max_output_tokens: int
     memory_path: Path = PROJECT_ROOT / ".dongxuan" / "memory.json"
+    audit_log_path: Path = PROJECT_ROOT / ".dongxuan" / "audit.jsonl"
 
 
 def load_settings() -> WebSettings:
     codex_auth = _load_codex_auth()
     codex_config = _load_codex_config()
+    memory_path = Path(os.getenv("DONGXUAN_MEMORY_PATH", str(PROJECT_ROOT / ".dongxuan" / "memory.json"))).expanduser()
     return WebSettings(
         access_password=_blank_to_none(os.getenv("DONGXUAN_ACCESS_PASSWORD")),
         llm_provider=os.getenv("DONGXUAN_LLM_PROVIDER", "echo").strip().lower() or "echo",
@@ -50,7 +52,8 @@ def load_settings() -> WebSettings:
         request_timeout_seconds=float(os.getenv("DONGXUAN_REQUEST_TIMEOUT_SECONDS", "240")),
         max_question_length=int(os.getenv("DONGXUAN_MAX_QUESTION_LENGTH", "2000")),
         max_output_tokens=int(os.getenv("DONGXUAN_MAX_OUTPUT_TOKENS", "8192")),
-        memory_path=Path(os.getenv("DONGXUAN_MEMORY_PATH", "/data/dongxuan/memory.json")).expanduser(),
+        memory_path=memory_path,
+        audit_log_path=Path(os.getenv("DONGXUAN_AUDIT_LOG_PATH", str(memory_path.with_name("audit.jsonl")))).expanduser(),
     )
 
 

@@ -14,15 +14,18 @@ class CaseStore:
         self.path = path
         self.max_records = max_records
 
-    def list_cases(self) -> list[dict[str, Any]]:
+    def list_cases(self, *, owner_hash: str | None = None, include_all: bool = False) -> list[dict[str, Any]]:
         data = self._read()
-        return data["cases"]
+        cases = data["cases"]
+        if not include_all:
+            cases = [case for case in cases if case.get("owner_hash") == owner_hash]
+        return deepcopy(cases)
 
-    def get_case(self, case_id: str) -> dict[str, Any]:
-        case = self._find_case(case_id)
+    def get_case(self, case_id: str, *, owner_hash: str | None = None, include_all: bool = False) -> dict[str, Any]:
+        case = self._find_case(case_id, owner_hash=owner_hash, include_all=include_all)
         return deepcopy(case)
 
-    def create_case(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def create_case(self, payload: dict[str, Any], *, owner_hash: str | None = None) -> dict[str, Any]:
         data = self._read()
         now = _now()
         case = _normalize_case(
@@ -32,6 +35,7 @@ class CaseStore:
                 "system": payload.get("system") or "bazi",
                 "created_at": now,
                 "updated_at": now,
+                "owner_hash": owner_hash,
                 **payload,
             }
         )
@@ -39,9 +43,9 @@ class CaseStore:
         self._write(data)
         return deepcopy(case)
 
-    def update_case(self, case_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def update_case(self, case_id: str, payload: dict[str, Any], *, owner_hash: str | None = None, include_all: bool = False) -> dict[str, Any]:
         data = self._read()
-        case = _find_in_data(data, case_id)
+        case = _find_in_data(data, case_id, owner_hash=owner_hash, include_all=include_all)
         for key in ("title", "birth", "bazi", "luck", "background", "facts", "intents", "notes"):
             if key in payload:
                 case[key] = payload[key]
@@ -52,14 +56,15 @@ class CaseStore:
         self._write(data)
         return deepcopy(case)
 
-    def delete_case(self, case_id: str) -> None:
+    def delete_case(self, case_id: str, *, owner_hash: str | None = None, include_all: bool = False) -> None:
         data = self._read()
+        _find_in_data(data, case_id, owner_hash=owner_hash, include_all=include_all)
         data["cases"] = [case for case in data["cases"] if case.get("id") != case_id]
         self._write(data)
 
-    def append_record(self, case_id: str, *, question: str | None, analysis: str, conclusion: str, context: dict[str, Any]) -> dict[str, Any]:
+    def append_record(self, case_id: str, *, question: str | None, analysis: str, conclusion: str, context: dict[str, Any], owner_hash: str | None = None, include_all: bool = False) -> dict[str, Any]:
         data = self._read()
-        case = _find_in_data(data, case_id)
+        case = _find_in_data(data, case_id, owner_hash=owner_hash, include_all=include_all)
         records = list(case.get("records") or [])
         records.append(
             {
@@ -79,9 +84,9 @@ class CaseStore:
         self._write(data)
         return deepcopy(case)
 
-    def merge_chart_snapshot(self, case_id: str, context: dict[str, Any]) -> dict[str, Any]:
+    def merge_chart_snapshot(self, case_id: str, context: dict[str, Any], *, owner_hash: str | None = None, include_all: bool = False) -> dict[str, Any]:
         data = self._read()
-        case = _find_in_data(data, case_id)
+        case = _find_in_data(data, case_id, owner_hash=owner_hash, include_all=include_all)
         case["bazi"] = {
             "calendar": context.get("calendar", {}),
             "day_master": context.get("day_master"),
@@ -103,8 +108,8 @@ class CaseStore:
         self._write(data)
         return deepcopy(case)
 
-    def _find_case(self, case_id: str) -> dict[str, Any]:
-        return _find_in_data(self._read(), case_id)
+    def _find_case(self, case_id: str, *, owner_hash: str | None = None, include_all: bool = False) -> dict[str, Any]:
+        return _find_in_data(self._read(), case_id, owner_hash=owner_hash, include_all=include_all)
 
     def _read(self) -> dict[str, Any]:
         if not self.path.exists():
@@ -125,9 +130,9 @@ class CaseStore:
         os.replace(tmp_path, self.path)
 
 
-def _find_in_data(data: dict[str, Any], case_id: str) -> dict[str, Any]:
+def _find_in_data(data: dict[str, Any], case_id: str, *, owner_hash: str | None = None, include_all: bool = False) -> dict[str, Any]:
     for case in data["cases"]:
-        if case.get("id") == case_id:
+        if case.get("id") == case_id and (include_all or owner_hash is None or case.get("owner_hash") == owner_hash):
             return case
     raise KeyError(case_id)
 
@@ -137,6 +142,7 @@ def _normalize_case(case: dict[str, Any]) -> dict[str, Any]:
         "id": str(case.get("id") or f"case_{uuid.uuid4().hex}"),
         "title": str(case.get("title") or "新的案例"),
         "system": str(case.get("system") or "bazi"),
+        "owner_hash": str(case.get("owner_hash") or ""),
         "created_at": str(case.get("created_at") or _now()),
         "updated_at": str(case.get("updated_at") or _now()),
         "birth": _dict(case.get("birth")),

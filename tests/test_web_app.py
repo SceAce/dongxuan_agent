@@ -42,6 +42,7 @@ def test_bazi_analyze_matches_terminal_context_builder(monkeypatch):
     )
 
     client = TestClient(create_app())
+    request["password"] = "alice"
     response = client.post("/api/bazi/analyze", json=request)
 
     assert response.status_code == 200
@@ -82,6 +83,7 @@ def test_daliuren_analyze_matches_terminal_context_builder(monkeypatch):
     expected_context["rule_cards"] = build_rule_context(request["question"])
 
     client = TestClient(create_app())
+    request["password"] = "alice"
     response = client.post("/api/daliuren/analyze", json=request)
 
     assert response.status_code == 200
@@ -98,11 +100,12 @@ def test_daliuren_time_mode_without_divination_matches_chart_session(monkeypatch
     from dongxuan_agent.web.app import create_app
     from fastapi.testclient import TestClient
 
-    request = {"datetime": "2026-05-28 20:00:00", "timezone": "Asia/Shanghai", "mode": "time"}
+    request = {"password": "alice", "datetime": "2026-05-28 20:00:00", "timezone": "Asia/Shanghai", "mode": "time"}
     expected_context = chart_to_json(build_chart(request["datetime"], timezone=request["timezone"]))
     expected_context["rule_cards"] = build_rule_context(None)
 
     client = TestClient(create_app())
+    request["password"] = "alice"
     response = client.post("/api/daliuren/analyze", json=request)
 
     assert response.status_code == 200
@@ -161,6 +164,7 @@ def test_case_api_persists_case_memory(tmp_path, monkeypatch):
     created = client.post(
         "/api/cases",
         json={
+            "password": "alice",
             "title": "财运案例",
             "system": "bazi",
             "birth": {"datetime": "2006-12-18 12:30:00", "timezone": "Asia/Shanghai", "region": ""},
@@ -175,13 +179,13 @@ def test_case_api_persists_case_memory(tmp_path, monkeypatch):
     assert case["title"] == "财运案例"
     assert case["facts"][0]["confidence"] == "verified"
 
-    listed = client.get("/api/cases")
+    listed = client.post("/api/cases/list", json={"password": "alice"})
     assert listed.status_code == 200
     assert listed.json()[0]["id"] == case["id"]
 
     updated = client.patch(
         f"/api/cases/{case['id']}",
-        json={"background": "金融短线", "notes": {"summary": "围绕财务波动追问。"}},
+        json={"password": "alice", "background": "金融短线", "notes": {"summary": "围绕财务波动追问。"}},
     )
     assert updated.status_code == 200
     assert updated.json()["background"] == "金融短线"
@@ -198,6 +202,7 @@ def test_case_bazi_analysis_injects_memory_and_appends_record(tmp_path, monkeypa
     case = client.post(
         "/api/cases",
         json={
+            "password": "alice",
             "title": "财运案例",
             "system": "bazi",
             "background": "金融短线",
@@ -209,6 +214,7 @@ def test_case_bazi_analysis_injects_memory_and_appends_record(tmp_path, monkeypa
     response = client.post(
         f"/api/cases/{case['id']}/bazi/analyze",
         json={
+            "password": "alice",
             "datetime": "2006-12-18 12:30:00",
             "timezone": "Asia/Shanghai",
             "question": "继续看六月财运",
@@ -221,7 +227,7 @@ def test_case_bazi_analysis_injects_memory_and_appends_record(tmp_path, monkeypa
     assert payload["context"]["case_memory"]["facts"][0]["text"] == "五月先赚后回撤"
     assert "echo provider" in payload["analysis"]
 
-    stored = client.get(f"/api/cases/{case['id']}").json()
+    stored = client.post(f"/api/cases/{case['id']}/get", json={"password": "alice"}).json()
     assert stored["records"][-1]["question"] == "继续看六月财运"
     assert stored["records"][-1]["context"]["case_memory"]["intents"][0]["text"] == "验证六月走势"
 
@@ -233,11 +239,12 @@ def test_case_bazi_analysis_extracts_target_year_from_question_and_persists_char
     from fastapi.testclient import TestClient
 
     client = TestClient(create_app())
-    case = client.post("/api/cases", json={"title": "学业案例", "system": "bazi"}).json()
+    case = client.post("/api/cases", json={"password": "alice", "title": "学业案例", "system": "bazi"}).json()
 
     response = client.post(
         f"/api/cases/{case['id']}/bazi/analyze",
         json={
+            "password": "alice",
             "datetime": "2006-11-05 06:00:00",
             "timezone": "Asia/Shanghai",
             "gender": "男",
@@ -250,7 +257,7 @@ def test_case_bazi_analysis_extracts_target_year_from_question_and_persists_char
     assert payload["context"]["analysis_hints"]["target_year"] == 2026
     assert "luck_year_remedy" in payload["context"]
 
-    stored = client.get(f"/api/cases/{case['id']}").json()
+    stored = client.post(f"/api/cases/{case['id']}/get", json={"password": "alice"}).json()
     assert stored["bazi"]["pillars"]
     assert stored["luck"]["cycles"]
     assert stored["notes"]["year_hints"]["2026"]["target_year"] == 2026
@@ -267,7 +274,7 @@ def test_model_errors_are_returned_as_json(monkeypatch):
     monkeypatch.setattr(web_app, "analyze_bazi", broken_analyze_bazi)
 
     client = TestClient(web_app.create_app())
-    response = client.post("/api/bazi/analyze", json={"datetime": "2006-12-18 12:30:00"})
+    response = client.post("/api/bazi/analyze", json={"password": "alice", "datetime": "2006-12-18 12:30:00"})
 
     assert response.status_code == 502
     assert response.headers["content-type"].startswith("application/json")
@@ -459,6 +466,9 @@ def test_frontend_supports_local_conversation_switching_without_backend_writes()
         "switchConversation",
         "deleteConversation",
         "/api/cases",
+        "/api/cases/list",
+        "如果第一次使用",
+        "sudo",
         "已验证事实",
         "待验证事实",
         "背景",

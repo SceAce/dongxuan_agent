@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+import hashlib
 from pathlib import Path
 import re
 from typing import Literal
@@ -9,6 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
+from .audit import AuditLogger
 from .config import WebSettings, load_settings
 from .llm import LLMAdapter, build_llm_adapter
 from .memory import CaseStore
@@ -19,6 +22,13 @@ STATIC_DIR = Path(__file__).with_name("static")
 
 class PasswordPayload(BaseModel):
     password: str | None = None
+
+
+@dataclass(frozen=True)
+class Actor:
+    password: str
+    owner_hash: str
+    is_admin: bool = False
 
 
 class BaziAnalyzeRequest(PasswordPayload):
@@ -85,69 +95,93 @@ def create_app() -> FastAPI:
     app.state.settings = settings
     app.state.llm_adapter = adapter
     app.state.case_store = case_store
+    app.state.audit_logger = AuditLogger(settings.audit_log_path)
 
     @app.get("/api/health")
     def health() -> dict:
         return {"status": "ok", "systems": ["bazi", "daliuren"], "readonly": True}
 
     @app.post("/api/bazi/analyze")
-    def bazi_analyze(request: BaziAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter] = Depends(_deps)) -> dict:
-        active_settings, active_adapter = deps
-        _require_password(request.password, active_settings)
+    def bazi_analyze(request: BaziAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> dict:
+        active_settings, active_adapter, _, _ = deps
+        actor = _require_actor(request.password, active_settings)
+        _audit(deps, "bazi.analyze", actor)
         return _run_analysis(lambda: analyze_bazi(request, active_adapter))
 
     @app.post("/api/daliuren/analyze")
-    def daliuren_analyze(request: DaliurenAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter] = Depends(_deps)) -> dict:
-        active_settings, active_adapter = deps
-        _require_password(request.password, active_settings)
+    def daliuren_analyze(request: DaliurenAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> dict:
+        active_settings, active_adapter, _, _ = deps
+        actor = _require_actor(request.password, active_settings)
+        _audit(deps, "daliuren.analyze", actor)
         return _run_analysis(lambda: analyze_daliuren(request, active_adapter))
 
     @app.get("/api/cases")
-    def list_cases(deps: tuple[WebSettings, LLMAdapter, CaseStore] = Depends(_deps_with_store)) -> list[dict]:
-        _, _, active_store = deps
-        return active_store.list_cases()
+    def list_cases_requires_password() -> list[dict]:
+        raise HTTPException(status_code=401, detail=_password_required_message())
+
+    @app.post("/api/cases/list")
+    def list_cases(request: PasswordPayload, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> list[dict]:
+        active_settings, _, active_store, _ = deps
+        actor = _require_actor(request.password, active_settings)
+        _audit(deps, "case.list", actor)
+        return active_store.list_cases(owner_hash=actor.owner_hash, include_all=actor.is_admin)
 
     @app.post("/api/cases")
-    def create_case(request: CasePayload, deps: tuple[WebSettings, LLMAdapter, CaseStore] = Depends(_deps_with_store)) -> dict:
-        active_settings, _, active_store = deps
-        _require_password(request.password, active_settings)
-        return active_store.create_case(request.model_dump(exclude={"password"}))
+    def create_case(request: CasePayload, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> dict:
+        active_settings, _, active_store, _ = deps
+        actor = _require_actor(request.password, active_settings)
+        created = active_store.create_case(request.model_dump(exclude={"password"}), owner_hash=actor.owner_hash)
+        _audit(deps, "case.create", actor, case_id=created["id"])
+        return created
 
     @app.get("/api/cases/{case_id}")
-    def get_case(case_id: str, deps: tuple[WebSettings, LLMAdapter, CaseStore] = Depends(_deps_with_store)) -> dict:
-        _, _, active_store = deps
-        return _case_or_404(lambda: active_store.get_case(case_id))
+    def get_case_requires_password(case_id: str) -> dict:
+        raise HTTPException(status_code=401, detail=_password_required_message())
+
+    @app.post("/api/cases/{case_id}/get")
+    def get_case(case_id: str, request: PasswordPayload, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> dict:
+        active_settings, _, active_store, _ = deps
+        actor = _require_actor(request.password, active_settings)
+        case = _case_or_404(lambda: active_store.get_case(case_id, owner_hash=actor.owner_hash, include_all=actor.is_admin))
+        _audit(deps, "case.get", actor, case_id=case_id)
+        return case
 
     @app.patch("/api/cases/{case_id}")
-    def update_case(case_id: str, request: CasePatchPayload, deps: tuple[WebSettings, LLMAdapter, CaseStore] = Depends(_deps_with_store)) -> dict:
-        active_settings, _, active_store = deps
-        _require_password(request.password, active_settings)
+    def update_case(case_id: str, request: CasePatchPayload, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> dict:
+        active_settings, _, active_store, _ = deps
+        actor = _require_actor(request.password, active_settings)
         payload = request.model_dump(exclude={"password"}, exclude_none=True)
-        return _case_or_404(lambda: active_store.update_case(case_id, payload))
+        updated = _case_or_404(lambda: active_store.update_case(case_id, payload, owner_hash=actor.owner_hash, include_all=actor.is_admin))
+        _audit(deps, "case.update", actor, case_id=case_id)
+        return updated
 
     @app.delete("/api/cases/{case_id}")
-    def delete_case(case_id: str, request: PasswordPayload | None = None, deps: tuple[WebSettings, LLMAdapter, CaseStore] = Depends(_deps_with_store)) -> dict:
-        active_settings, _, active_store = deps
-        _require_password(request.password if request else None, active_settings)
-        active_store.delete_case(case_id)
+    def delete_case(case_id: str, request: PasswordPayload | None = None, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> dict:
+        active_settings, _, active_store, _ = deps
+        actor = _require_actor(request.password if request else None, active_settings)
+        active_store.delete_case(case_id, owner_hash=actor.owner_hash, include_all=actor.is_admin)
+        _audit(deps, "case.delete", actor, case_id=case_id)
         return {"deleted": True}
 
     @app.post("/api/cases/{case_id}/bazi/analyze")
-    def analyze_case_bazi(case_id: str, request: BaziAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter, CaseStore] = Depends(_deps_with_store)) -> dict:
-        active_settings, active_adapter, active_store = deps
-        _require_password(request.password, active_settings)
-        case = _case_or_404(lambda: active_store.get_case(case_id))
+    def analyze_case_bazi(case_id: str, request: BaziAnalyzeRequest, deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger] = Depends(_deps_full)) -> dict:
+        active_settings, active_adapter, active_store, _ = deps
+        actor = _require_actor(request.password, active_settings)
+        case = _case_or_404(lambda: active_store.get_case(case_id, owner_hash=actor.owner_hash, include_all=actor.is_admin))
         active_request = _with_inferred_target_year(request)
         result = _run_analysis(lambda: analyze_bazi(active_request, active_adapter, _case_memory(case)))
         conclusion = _extract_conclusion(result["analysis"])
-        active_store.merge_chart_snapshot(case_id, result["context"])
+        active_store.merge_chart_snapshot(case_id, result["context"], owner_hash=actor.owner_hash, include_all=actor.is_admin)
         active_store.append_record(
             case_id,
             question=active_request.question,
             analysis=result["analysis"],
             conclusion=conclusion,
             context=result["context"],
+            owner_hash=actor.owner_hash,
+            include_all=actor.is_admin,
         )
+        _audit(deps, "case.bazi.analyze", actor, case_id=case_id)
         return result
 
     if STATIC_DIR.exists():
@@ -170,9 +204,30 @@ def _deps_with_store() -> tuple[WebSettings, LLMAdapter, CaseStore]:
     return settings, build_llm_adapter(settings), CaseStore(settings.memory_path)
 
 
-def _require_password(password: str | None, settings: WebSettings) -> None:
-    if settings.access_password and password != settings.access_password:
-        raise HTTPException(status_code=401, detail="Invalid access password")
+def _deps_full() -> tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger]:
+    settings = load_settings()
+    return settings, build_llm_adapter(settings), CaseStore(settings.memory_path), AuditLogger(settings.audit_log_path)
+
+
+def _require_actor(password: str | None, settings: WebSettings) -> Actor:
+    del settings
+    clean = (password or "").strip()
+    if not clean:
+        raise HTTPException(status_code=401, detail=_password_required_message())
+    return Actor(password=clean, owner_hash=_password_fingerprint(clean), is_admin=clean == "sudo")
+
+
+def _password_required_message() -> str:
+    return "请输入访问密码。如果第一次使用，请在密码框里设置一个自己的密码；之后使用同一个密码即可看到自己的对话。管理员密码 sudo 可查看全部。"
+
+
+def _password_fingerprint(password: str) -> str:
+    return hashlib.sha256(f"dongxuan-web:{password}".encode("utf-8")).hexdigest()
+
+
+def _audit(deps: tuple[WebSettings, LLMAdapter, CaseStore, AuditLogger], action: str, actor: Actor, *, case_id: str | None = None, status: str = "ok") -> None:
+    _, _, _, logger = deps
+    logger.write(action=action, actor_hash=actor.owner_hash, case_id=case_id, status=status, detail={"admin": actor.is_admin})
 
 
 def _run_analysis(callback):
