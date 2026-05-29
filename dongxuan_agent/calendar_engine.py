@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from html import unescape
 from zoneinfo import ZoneInfo
 
 import sxtwl
@@ -26,9 +27,21 @@ def parse_datetime(value: str | datetime, timezone: str = "Asia/Shanghai") -> da
     tz = ZoneInfo(timezone)
     if isinstance(value, datetime):
         return value.astimezone(tz) if value.tzinfo else value.replace(tzinfo=tz)
-    normalized = value.strip().replace("T", " ")
-    dt = datetime.fromisoformat(normalized)
+    normalized = unescape(value).strip().strip("'\"").replace("T", " ")
+    try:
+        dt = datetime.fromisoformat(normalized)
+    except ValueError:
+        dt = _parse_datetime_fallback(normalized)
     return dt.astimezone(tz) if dt.tzinfo else dt.replace(tzinfo=tz)
+
+
+def _parse_datetime_fallback(value: str) -> datetime:
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"Invalid isoformat string: {value!r}")
 
 
 def _gz_to_text(gz) -> str:

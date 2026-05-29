@@ -515,8 +515,9 @@
           await saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });
           await refreshActiveConversation();
         } catch (error) {
-          renderAnalysisCards(`## 结论\n<span class="error">${escapeHtml(error.message)}</span>`);
-          await saveActiveConversation({ analysis: `## 结论\n${error.message}`, contextText: "" });
+          const errorAnalysis = `## 结论\n${error.message}`;
+          renderAnalysisCards(errorAnalysis);
+          await saveActiveConversation({ analysis: errorAnalysis, contextText: "" });
         } finally {
           submit.disabled = false;
         }

@@ -16,6 +16,12 @@ def test_parse_datetime_attaches_named_timezone():
     assert parsed == datetime(2026, 5, 25, 12, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
 
 
+def test_parse_datetime_accepts_html_quoted_input_from_web_errors():
+    parsed = parse_datetime("&#039;2006-11-05 6:00:00&#039;", "Asia/Shanghai")
+
+    assert parsed == datetime(2006, 11, 5, 6, 0, 0, tzinfo=ZoneInfo("Asia/Shanghai"))
+
+
 def test_calendar_info_contains_ganzhi_and_hour_branch():
     info = get_calendar_info("2026-05-25 12:30", "Asia/Shanghai")
 
