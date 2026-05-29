@@ -57,7 +57,7 @@
       }
       .grid {
         display: grid;
-        grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+        grid-template-columns: minmax(220px, 280px) minmax(320px, 420px) minmax(0, 1fr);
         gap: 18px;
         align-items: start;
       }
@@ -77,6 +77,35 @@
         grid-template-columns: 1fr 1fr;
         gap: 8px;
         margin-bottom: 14px;
+      }
+      .conversation-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .conversation-list {
+        display: grid;
+        gap: 8px;
+      }
+      .conversation-item {
+        display: grid;
+        gap: 4px;
+        min-height: 52px;
+        text-align: left;
+        font-weight: 700;
+      }
+      .conversation-item small {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .conversation-item.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .conversation-item.active small {
+        color: rgba(255, 255, 255, 0.78);
       }
       button {
         border: 1px solid var(--line);
@@ -257,6 +286,13 @@
       </div>
     </header>
     <main class="wrap grid">
+      <aside class="panel">
+        <div class="conversation-actions">
+          <button id="new-conversation" type="button">新建对话</button>
+          <button id="delete-conversation" type="button">删除</button>
+        </div>
+        <div class="conversation-list" id="conversation-list"></div>
+      </aside>
       <section class="panel">
         <div class="tabs">
           <button id="tab-bazi" class="active" type="button">八字</button>
@@ -363,14 +399,23 @@
       </section>
     </main>
     <script>
-      const state = { system: "bazi" };
+      const STORAGE_KEY = "dongxuan.readonly.conversations.v1";
+      const DEFAULT_CONTEXT_TEXT = "";
+      const state = { system: "bazi", conversations: [], activeConversationId: null, currentAnalysisRaw: "等待提交。" };
       const form = document.querySelector("#form");
       const submit = document.querySelector("#submit");
       const analysis = document.querySelector("#analysis");
       const context = document.querySelector("#context");
+      const conversationList = document.querySelector("#conversation-list");
 
       document.querySelector("#tab-bazi").addEventListener("click", () => switchSystem("bazi"));
       document.querySelector("#tab-daliuren").addEventListener("click", () => switchSystem("daliuren"));
+      document.querySelector("#new-conversation").addEventListener("click", () => createConversation());
+      document.querySelector("#delete-conversation").addEventListener("click", () => deleteConversation(state.activeConversationId));
+
+      loadConversations();
+      renderConversationList();
+      applyActiveConversation();
 
       fetch("/api/health")
         .then((r) => r.json())
@@ -384,6 +429,7 @@
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         submit.disabled = true;
+        saveActiveConversation();
         renderAnalysisCards("分析中...\n\n大模型会先生成编号化公开分析步骤，再给综合判断。复杂盘面可能需要 1-4 分钟。");
         context.textContent = "";
         try {
@@ -400,8 +446,10 @@
           }
           renderAnalysisCards(data.analysis);
           context.textContent = JSON.stringify(data.context, null, 2);
+          saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });
         } catch (error) {
           renderAnalysisCards(`## 结论\n<span class="error">${escapeHtml(error.message)}</span>`);
+          saveActiveConversation({ analysis: `## 结论\n${error.message}`, contextText: "" });
         } finally {
           submit.disabled = false;
         }
@@ -415,6 +463,8 @@
         document.querySelectorAll(".daliuren-only").forEach((el) => el.classList.toggle("hidden", system !== "daliuren"));
         form.datetime.value = system === "bazi" ? "2006-12-18 12:30:00" : "2026-05-28 20:00:00";
         form.question.value = system === "bazi" ? "推断2025年发生了什么" : "问工作进展";
+        saveActiveConversation();
+        renderConversationList();
       }
 
       function buildPayload() {
@@ -455,7 +505,177 @@
         return Number.isFinite(number) ? Math.trunc(number) : null;
       }
 
+      function loadConversations() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          state.conversations = Array.isArray(parsed) ? parsed.filter((item) => item && item.id) : [];
+        } catch {
+          state.conversations = [];
+        }
+        if (!state.conversations.length) {
+          state.conversations = [buildConversation()];
+        }
+        state.activeConversationId = state.conversations[0].id;
+        persistConversations();
+      }
+
+      function buildConversation(overrides = {}) {
+        const now = new Date().toISOString();
+        return {
+          id: `conv-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          title: "新的对话",
+          system: "bazi",
+          formData: defaultFormData("bazi"),
+          analysis: "等待提交。",
+          contextText: DEFAULT_CONTEXT_TEXT,
+          createdAt: now,
+          updatedAt: now,
+          ...overrides,
+        };
+      }
+
+      function defaultFormData(system) {
+        return {
+          password: form.password.value || "",
+          datetime: system === "bazi" ? "2006-12-18 12:30:00" : "2026-05-28 20:00:00",
+          timezone: "Asia/Shanghai",
+          gender: "",
+          zi_hour_rule: "whole",
+          longitude: "",
+          target_year: "",
+          mode: "time",
+          number: "",
+          hour_branch: "",
+          birth_year: "",
+          background: "",
+          question: system === "bazi" ? "推断2025年发生了什么" : "问工作进展",
+        };
+      }
+
+      function createConversation() {
+        saveActiveConversation();
+        const conversation = buildConversation({ title: `对话 ${state.conversations.length + 1}` });
+        state.conversations.unshift(conversation);
+        state.activeConversationId = conversation.id;
+        persistConversations();
+        applyActiveConversation();
+        renderConversationList();
+      }
+
+      function switchConversation(id) {
+        if (id === state.activeConversationId) {
+          return;
+        }
+        saveActiveConversation();
+        state.activeConversationId = id;
+        applyActiveConversation();
+        persistConversations();
+        renderConversationList();
+      }
+
+      function deleteConversation(id) {
+        if (!id || state.conversations.length <= 1) {
+          return;
+        }
+        const index = state.conversations.findIndex((item) => item.id === id);
+        state.conversations = state.conversations.filter((item) => item.id !== id);
+        const next = state.conversations[Math.max(0, index - 1)] || state.conversations[0];
+        state.activeConversationId = next.id;
+        persistConversations();
+        applyActiveConversation();
+        renderConversationList();
+      }
+
+      function saveActiveConversation(overrides = {}) {
+        const conversation = getActiveConversation();
+        if (!conversation) {
+          return;
+        }
+        conversation.system = state.system;
+        conversation.formData = readFormData();
+        conversation.analysis = overrides.analysis ?? state.currentAnalysisRaw ?? conversation.analysis;
+        conversation.contextText = overrides.contextText ?? context.textContent ?? "";
+        conversation.title = buildConversationTitle(conversation);
+        conversation.updatedAt = new Date().toISOString();
+        persistConversations();
+      }
+
+      function applyActiveConversation() {
+        const conversation = getActiveConversation();
+        if (!conversation) {
+          return;
+        }
+        switchSystemSilently(conversation.system || "bazi");
+        writeFormData(conversation.formData || defaultFormData(state.system));
+        renderAnalysisCards(conversation.analysis || "等待提交。");
+        context.textContent = conversation.contextText || DEFAULT_CONTEXT_TEXT;
+      }
+
+      function readFormData() {
+        return Object.fromEntries(new FormData(form).entries());
+      }
+
+      function writeFormData(values) {
+        for (const [key, value] of Object.entries(values || {})) {
+          if (form.elements[key]) {
+            form.elements[key].value = value ?? "";
+          }
+        }
+      }
+
+      function switchSystemSilently(system) {
+        state.system = system;
+        document.querySelector("#tab-bazi").classList.toggle("active", system === "bazi");
+        document.querySelector("#tab-daliuren").classList.toggle("active", system === "daliuren");
+        document.querySelectorAll(".bazi-only").forEach((el) => el.classList.toggle("hidden", system !== "bazi"));
+        document.querySelectorAll(".daliuren-only").forEach((el) => el.classList.toggle("hidden", system !== "daliuren"));
+      }
+
+      function getActiveConversation() {
+        return state.conversations.find((item) => item.id === state.activeConversationId);
+      }
+
+      function buildConversationTitle(conversation) {
+        const question = (conversation.formData?.question || "").trim();
+        if (question) {
+          return question.slice(0, 18);
+        }
+        return conversation.system === "daliuren" ? "大六壬对话" : "八字对话";
+      }
+
+      function renderConversationList() {
+        conversationList.innerHTML = state.conversations
+          .map((conversation) => {
+            const active = conversation.id === state.activeConversationId ? " active" : "";
+            const systemName = conversation.system === "daliuren" ? "大六壬" : "八字";
+            const updatedAt = formatDateTime(conversation.updatedAt);
+            return `
+              <button class="conversation-item${active}" type="button" data-id="${escapeHtml(conversation.id)}">
+                <span>${escapeHtml(conversation.title || "未命名对话")}</span>
+                <small>${systemName} / ${updatedAt}</small>
+              </button>
+            `;
+          })
+          .join("");
+        conversationList.querySelectorAll("[data-id]").forEach((button) => {
+          button.addEventListener("click", () => switchConversation(button.dataset.id));
+        });
+      }
+
+      function persistConversations() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.conversations.slice(0, 30)));
+      }
+
+      function formatDateTime(value) {
+        const date = value ? new Date(value) : new Date();
+        if (Number.isNaN(date.getTime())) {
+          return "刚刚";
+        }
+        return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      }
+
       function renderAnalysisCards(markdownText) {
+        state.currentAnalysisRaw = markdownText || "";
         const sections = splitAnalysisSections(markdownText || "");
         analysis.innerHTML = `
           <details class="result-card card-context">

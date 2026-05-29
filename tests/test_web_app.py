@@ -339,5 +339,25 @@ def test_frontend_renders_markdown_in_three_stacked_cards():
     assert "linear-gradient" in html
 
 
+def test_frontend_supports_local_conversation_switching_without_backend_writes():
+    from pathlib import Path
+
+    html = Path("dongxuan_agent/web/static/index.html").read_text(encoding="utf-8")
+
+    for text in [
+        "conversation-list",
+        "新建对话",
+        "localStorage",
+        "loadConversations",
+        "saveActiveConversation",
+        "switchConversation",
+        "deleteConversation",
+        "dongxuan.readonly.conversations.v1",
+    ]:
+        assert text in html
+    assert "/api/conversations" not in html
+    assert "/api/session" not in html
+
+
 def _json_roundtrip(value):
     return json.loads(json.dumps(value, ensure_ascii=False))
