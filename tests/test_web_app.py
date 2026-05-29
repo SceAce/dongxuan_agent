@@ -151,6 +151,81 @@ def test_no_shell_or_codex_endpoint_is_exposed(monkeypatch):
         assert client.post(path, json={}).status_code == 404
 
 
+def test_case_api_persists_case_memory(tmp_path, monkeypatch):
+    monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
+    monkeypatch.setenv("DONGXUAN_MEMORY_PATH", str(tmp_path / "memory.json"))
+    from dongxuan_agent.web.app import create_app
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_app())
+    created = client.post(
+        "/api/cases",
+        json={
+            "title": "财运案例",
+            "system": "bazi",
+            "birth": {"datetime": "2006-12-18 12:30:00", "timezone": "Asia/Shanghai", "region": ""},
+            "background": "目前关注财运",
+            "facts": [{"text": "五月先赚后回撤"}],
+            "intents": [{"text": "验证六月走势"}],
+        },
+    )
+
+    assert created.status_code == 200
+    case = created.json()
+    assert case["title"] == "财运案例"
+    assert case["facts"][0]["confidence"] == "verified"
+
+    listed = client.get("/api/cases")
+    assert listed.status_code == 200
+    assert listed.json()[0]["id"] == case["id"]
+
+    updated = client.patch(
+        f"/api/cases/{case['id']}",
+        json={"background": "金融短线", "notes": {"summary": "围绕财务波动追问。"}},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["background"] == "金融短线"
+    assert updated.json()["notes"]["summary"] == "围绕财务波动追问。"
+
+
+def test_case_bazi_analysis_injects_memory_and_appends_record(tmp_path, monkeypatch):
+    monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
+    monkeypatch.setenv("DONGXUAN_MEMORY_PATH", str(tmp_path / "memory.json"))
+    from dongxuan_agent.web.app import create_app
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_app())
+    case = client.post(
+        "/api/cases",
+        json={
+            "title": "财运案例",
+            "system": "bazi",
+            "background": "金融短线",
+            "facts": [{"text": "五月先赚后回撤"}],
+            "intents": [{"text": "验证六月走势"}],
+        },
+    ).json()
+
+    response = client.post(
+        f"/api/cases/{case['id']}/bazi/analyze",
+        json={
+            "datetime": "2006-12-18 12:30:00",
+            "timezone": "Asia/Shanghai",
+            "question": "继续看六月财运",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["context"]["case_memory"]["background"] == "金融短线"
+    assert payload["context"]["case_memory"]["facts"][0]["text"] == "五月先赚后回撤"
+    assert "echo provider" in payload["analysis"]
+
+    stored = client.get(f"/api/cases/{case['id']}").json()
+    assert stored["records"][-1]["question"] == "继续看六月财运"
+    assert stored["records"][-1]["context"]["case_memory"]["intents"][0]["text"] == "验证六月走势"
+
+
 def test_model_errors_are_returned_as_json(monkeypatch):
     monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
     import dongxuan_agent.web.app as web_app
@@ -284,6 +359,8 @@ def test_llm_message_requires_numbered_public_analysis_steps():
     assert "结论必须通俗易懂" in message
     assert "不要堆字段名" in message
     assert "优先保证结论完整" in message
+    assert "已验证事实 Fact 优先级高于旧判断" in message
+    assert "待验证事实 Intent 不能当成已经发生" in message
     assert "不要单列“不确定项”模块" in message
     assert "不要输出隐藏思维链" in message
     assert "1." in message
@@ -347,15 +424,16 @@ def test_frontend_supports_local_conversation_switching_without_backend_writes()
     for text in [
         "conversation-list",
         "新建对话",
-        "localStorage",
         "loadConversations",
         "saveActiveConversation",
         "switchConversation",
         "deleteConversation",
-        "dongxuan.readonly.conversations.v1",
+        "/api/cases",
+        "已验证事实",
+        "待验证事实",
+        "背景",
     ]:
         assert text in html
-    assert "/api/conversations" not in html
     assert "/api/session" not in html
 
 

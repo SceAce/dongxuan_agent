@@ -105,6 +105,7 @@ def _compose_user_message(*, system: str, prompt: str, context: dict) -> str:
         f"# System\n{system}\n\n"
         "# Output Contract\n"
         "请只按三个 Markdown 模块输出，便于前端渲染成卡片：\n"
+        "如果 JSON Context 中有 case_memory：已验证事实 Fact 优先级高于旧判断；待验证事实 Intent 不能当成已经发生，只能作为本轮验证方向；当前排盘 JSON 优先于长期摘要。\n"
         "## 确认前置信息\n"
         "1. 先说明你会按哪个系统流程分析，并校验关键盘面字段。\n"
         "2. 说明输入、盘面、时间、性别、问题语境等前置条件；缺失处只在本模块内简短标明。\n\n"

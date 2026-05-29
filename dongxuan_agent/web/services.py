@@ -14,7 +14,7 @@ from .llm import LLMAdapter
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-def analyze_bazi(request, adapter: LLMAdapter) -> dict:
+def analyze_bazi(request, adapter: LLMAdapter, case_memory: dict | None = None) -> dict:
     context = build_bazi_context(
         request.datetime,
         timezone=request.timezone,
@@ -24,6 +24,8 @@ def analyze_bazi(request, adapter: LLMAdapter) -> dict:
         target_year=request.target_year,
         question=request.question,
     )
+    if case_memory:
+        context["case_memory"] = case_memory
     prompt_file = PROJECT_ROOT / "bazi_prompt.md"
     prompt = prompt_file.read_text(encoding="utf-8")
     analysis = adapter.analyze(system="bazi", prompt=prompt, context=context)

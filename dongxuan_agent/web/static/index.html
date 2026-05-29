@@ -367,6 +367,18 @@
             <textarea name="background"></textarea>
           </label>
           <label>
+            背景
+            <textarea name="case_background"></textarea>
+          </label>
+          <label>
+            已验证事实
+            <textarea name="facts" placeholder="一行一条，用户确认过的事实"></textarea>
+          </label>
+          <label>
+            待验证事实
+            <textarea name="intents" placeholder="一行一条，当前想验证的问题或假设"></textarea>
+          </label>
+          <label>
             问题
             <textarea name="question">推断2025年发生了什么</textarea>
           </label>
@@ -399,7 +411,6 @@
       </section>
     </main>
     <script>
-      const STORAGE_KEY = "dongxuan.readonly.conversations.v1";
       const DEFAULT_CONTEXT_TEXT = "";
       const state = { system: "bazi", conversations: [], activeConversationId: null, currentAnalysisRaw: "等待提交。" };
       const form = document.querySelector("#form");
@@ -413,9 +424,9 @@
       document.querySelector("#new-conversation").addEventListener("click", () => createConversation());
       document.querySelector("#delete-conversation").addEventListener("click", () => deleteConversation(state.activeConversationId));
 
-      loadConversations();
-      renderConversationList();
-      applyActiveConversation();
+      loadConversations().catch((error) => {
+        renderAnalysisCards(`## 结论\n<span class="error">${escapeHtml(error.message)}</span>`);
+      });
 
       fetch("/api/health")
         .then((r) => r.json())
@@ -429,12 +440,17 @@
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         submit.disabled = true;
-        saveActiveConversation();
+        await saveActiveConversation();
         renderAnalysisCards("分析中...\n\n大模型会先生成编号化公开分析步骤，再给综合判断。复杂盘面可能需要 1-4 分钟。");
         context.textContent = "";
         try {
           const body = buildPayload();
-          const endpoint = state.system === "bazi" ? "/api/bazi/analyze" : "/api/daliuren/analyze";
+          const endpoint =
+            state.activeConversationId && state.system === "bazi"
+              ? `/api/cases/${encodeURIComponent(state.activeConversationId)}/bazi/analyze`
+              : state.system === "bazi"
+                ? "/api/bazi/analyze"
+                : "/api/daliuren/analyze";
           const response = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -446,10 +462,10 @@
           }
           renderAnalysisCards(data.analysis);
           context.textContent = JSON.stringify(data.context, null, 2);
-          saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });
+          await saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });
         } catch (error) {
           renderAnalysisCards(`## 结论\n<span class="error">${escapeHtml(error.message)}</span>`);
-          saveActiveConversation({ analysis: `## 结论\n${error.message}`, contextText: "" });
+          await saveActiveConversation({ analysis: `## 结论\n${error.message}`, contextText: "" });
         } finally {
           submit.disabled = false;
         }
@@ -505,31 +521,28 @@
         return Number.isFinite(number) ? Math.trunc(number) : null;
       }
 
-      function loadConversations() {
-        try {
-          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-          state.conversations = Array.isArray(parsed) ? parsed.filter((item) => item && item.id) : [];
-        } catch {
-          state.conversations = [];
-        }
+      async function loadConversations() {
+        const response = await fetch("/api/cases");
+        state.conversations = response.ok ? await response.json() : [];
         if (!state.conversations.length) {
-          state.conversations = [buildConversation()];
+          const created = await postJson("/api/cases", buildConversation());
+          state.conversations = [created];
         }
         state.activeConversationId = state.conversations[0].id;
-        persistConversations();
+        renderConversationList();
+        applyActiveConversation();
       }
 
       function buildConversation(overrides = {}) {
         const now = new Date().toISOString();
         return {
-          id: `conv-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           title: "新的对话",
           system: "bazi",
           formData: defaultFormData("bazi"),
           analysis: "等待提交。",
           contextText: DEFAULT_CONTEXT_TEXT,
           createdAt: now,
-          updatedAt: now,
+          updated_at: now,
           ...overrides,
         };
       }
@@ -548,45 +561,50 @@
           hour_branch: "",
           birth_year: "",
           background: "",
+          case_background: "",
+          facts: "",
+          intents: "",
           question: system === "bazi" ? "推断2025年发生了什么" : "问工作进展",
         };
       }
 
-      function createConversation() {
-        saveActiveConversation();
-        const conversation = buildConversation({ title: `对话 ${state.conversations.length + 1}` });
+      async function createConversation() {
+        await saveActiveConversation();
+        const conversation = await postJson("/api/cases", buildConversation({ title: `对话 ${state.conversations.length + 1}` }));
         state.conversations.unshift(conversation);
         state.activeConversationId = conversation.id;
-        persistConversations();
         applyActiveConversation();
         renderConversationList();
       }
 
-      function switchConversation(id) {
+      async function switchConversation(id) {
         if (id === state.activeConversationId) {
           return;
         }
-        saveActiveConversation();
+        await saveActiveConversation();
         state.activeConversationId = id;
         applyActiveConversation();
-        persistConversations();
         renderConversationList();
       }
 
-      function deleteConversation(id) {
+      async function deleteConversation(id) {
         if (!id || state.conversations.length <= 1) {
           return;
         }
         const index = state.conversations.findIndex((item) => item.id === id);
+        await fetch(`/api/cases/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: emptyToNull(form.password.value) }),
+        });
         state.conversations = state.conversations.filter((item) => item.id !== id);
         const next = state.conversations[Math.max(0, index - 1)] || state.conversations[0];
         state.activeConversationId = next.id;
-        persistConversations();
         applyActiveConversation();
         renderConversationList();
       }
 
-      function saveActiveConversation(overrides = {}) {
+      async function saveActiveConversation(overrides = {}) {
         const conversation = getActiveConversation();
         if (!conversation) {
           return;
@@ -596,8 +614,9 @@
         conversation.analysis = overrides.analysis ?? state.currentAnalysisRaw ?? conversation.analysis;
         conversation.contextText = overrides.contextText ?? context.textContent ?? "";
         conversation.title = buildConversationTitle(conversation);
-        conversation.updatedAt = new Date().toISOString();
-        persistConversations();
+        conversation.updated_at = new Date().toISOString();
+        const updated = await patchJson(`/api/cases/${encodeURIComponent(conversation.id)}`, casePayloadFromConversation(conversation));
+        Object.assign(conversation, updated);
       }
 
       function applyActiveConversation() {
@@ -606,9 +625,11 @@
           return;
         }
         switchSystemSilently(conversation.system || "bazi");
-        writeFormData(conversation.formData || defaultFormData(state.system));
-        renderAnalysisCards(conversation.analysis || "等待提交。");
-        context.textContent = conversation.contextText || DEFAULT_CONTEXT_TEXT;
+        writeFormData(memoryToFormData(conversation));
+        const records = conversation.records || [];
+        const latest = records[records.length - 1];
+        renderAnalysisCards(conversation.analysis || latest?.analysis || "等待提交。");
+        context.textContent = conversation.contextText || (latest?.context ? JSON.stringify(latest.context, null, 2) : DEFAULT_CONTEXT_TEXT);
       }
 
       function readFormData() {
@@ -621,6 +642,48 @@
             form.elements[key].value = value ?? "";
           }
         }
+      }
+
+      function casePayloadFromConversation(conversation) {
+        const formData = conversation.formData || {};
+        return {
+          password: emptyToNull(form.password.value),
+          title: conversation.title,
+          system: conversation.system,
+          birth: {
+            datetime: formData.datetime || "",
+            timezone: formData.timezone || "",
+            region: formData.region || "",
+            gender: formData.gender || "",
+            longitude: numberOrNull(formData.longitude),
+            zi_hour_rule: formData.zi_hour_rule || "whole",
+          },
+          background: formData.case_background || formData.background || "",
+          facts: linesToItems(formData.facts, "fact"),
+          intents: linesToItems(formData.intents, "intent"),
+          notes: conversation.notes || { summary: "" },
+        };
+      }
+
+      function linesToItems(value, type) {
+        return String(value || "")
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((text) => (type === "fact" ? { text, source: "user_verified" } : { text, status: "pending" }));
+      }
+
+      function memoryToFormData(conversation) {
+        const formData = conversation.formData || defaultFormData(conversation.system || "bazi");
+        formData.case_background = conversation.background || "";
+        formData.facts = (conversation.facts || []).map((item) => item.text).join("\n");
+        formData.intents = (conversation.intents || []).map((item) => item.text).join("\n");
+        formData.datetime = conversation.birth?.datetime || formData.datetime;
+        formData.timezone = conversation.birth?.timezone || formData.timezone;
+        formData.gender = conversation.birth?.gender || formData.gender;
+        formData.longitude = conversation.birth?.longitude ?? formData.longitude;
+        formData.zi_hour_rule = conversation.birth?.zi_hour_rule || formData.zi_hour_rule;
+        return formData;
       }
 
       function switchSystemSilently(system) {
@@ -636,7 +699,7 @@
       }
 
       function buildConversationTitle(conversation) {
-        const question = (conversation.formData?.question || "").trim();
+        const question = (conversation.formData?.question || conversation.intents?.[0]?.text || "").trim();
         if (question) {
           return question.slice(0, 18);
         }
@@ -648,7 +711,7 @@
           .map((conversation) => {
             const active = conversation.id === state.activeConversationId ? " active" : "";
             const systemName = conversation.system === "daliuren" ? "大六壬" : "八字";
-            const updatedAt = formatDateTime(conversation.updatedAt);
+            const updatedAt = formatDateTime(conversation.updated_at || conversation.updatedAt);
             return `
               <button class="conversation-item${active}" type="button" data-id="${escapeHtml(conversation.id)}">
                 <span>${escapeHtml(conversation.title || "未命名对话")}</span>
@@ -662,16 +725,38 @@
         });
       }
 
-      function persistConversations() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.conversations.slice(0, 30)));
-      }
-
       function formatDateTime(value) {
         const date = value ? new Date(value) : new Date();
         if (Number.isNaN(date.getTime())) {
           return "刚刚";
         }
         return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+      }
+
+      async function postJson(url, payload) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await parseResponse(response);
+        if (!response.ok) {
+          throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+        return data;
+      }
+
+      async function patchJson(url, payload) {
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await parseResponse(response);
+        if (!response.ok) {
+          throw new Error(data.detail || `HTTP ${response.status}`);
+        }
+        return data;
       }
 
       function renderAnalysisCards(markdownText) {

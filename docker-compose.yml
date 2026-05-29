@@ -7,9 +7,13 @@ services:
       DONGXUAN_LLM_PROVIDER: "${DONGXUAN_LLM_PROVIDER:-echo}"
       DONGXUAN_ACCESS_PASSWORD: "${DONGXUAN_ACCESS_PASSWORD:-}"
       DONGXUAN_MAX_QUESTION_LENGTH: "${DONGXUAN_MAX_QUESTION_LENGTH:-2000}"
+      DONGXUAN_MEMORY_PATH: "${DONGXUAN_MEMORY_PATH:-/data/dongxuan/memory.json}"
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_BASE_URL: "${OPENAI_BASE_URL:-}"
       OPENAI_MODEL: "${OPENAI_MODEL:-gpt-4.1-mini}"
+      OPENAI_WIRE_API: "${OPENAI_WIRE_API:-chat}"
+    volumes:
+      - ./dongxuan-data:/data/dongxuan
     read_only: true
     tmpfs:
       - /tmp

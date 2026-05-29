@@ -21,6 +21,7 @@ class WebSettings:
     request_timeout_seconds: float
     max_question_length: int
     max_output_tokens: int
+    memory_path: Path = PROJECT_ROOT / ".dongxuan" / "memory.json"
 
 
 def load_settings() -> WebSettings:
@@ -49,6 +50,7 @@ def load_settings() -> WebSettings:
         request_timeout_seconds=float(os.getenv("DONGXUAN_REQUEST_TIMEOUT_SECONDS", "240")),
         max_question_length=int(os.getenv("DONGXUAN_MAX_QUESTION_LENGTH", "2000")),
         max_output_tokens=int(os.getenv("DONGXUAN_MAX_OUTPUT_TOKENS", "8192")),
+        memory_path=Path(os.getenv("DONGXUAN_MEMORY_PATH", "/data/dongxuan/memory.json")).expanduser(),
     )
 
 
