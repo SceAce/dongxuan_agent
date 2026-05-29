@@ -226,6 +226,36 @@ def test_case_bazi_analysis_injects_memory_and_appends_record(tmp_path, monkeypa
     assert stored["records"][-1]["context"]["case_memory"]["intents"][0]["text"] == "验证六月走势"
 
 
+def test_case_bazi_analysis_extracts_target_year_from_question_and_persists_chart(tmp_path, monkeypatch):
+    monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
+    monkeypatch.setenv("DONGXUAN_MEMORY_PATH", str(tmp_path / "memory.json"))
+    from dongxuan_agent.web.app import create_app
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_app())
+    case = client.post("/api/cases", json={"title": "学业案例", "system": "bazi"}).json()
+
+    response = client.post(
+        f"/api/cases/{case['id']}/bazi/analyze",
+        json={
+            "datetime": "2006-11-05 06:00:00",
+            "timezone": "Asia/Shanghai",
+            "gender": "男",
+            "question": "看看桃花运如何？什么时候能脱单，结合2026年分析",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["context"]["analysis_hints"]["target_year"] == 2026
+    assert "luck_year_remedy" in payload["context"]
+
+    stored = client.get(f"/api/cases/{case['id']}").json()
+    assert stored["bazi"]["pillars"]
+    assert stored["luck"]["cycles"]
+    assert stored["notes"]["year_hints"]["2026"]["target_year"] == 2026
+
+
 def test_model_errors_are_returned_as_json(monkeypatch):
     monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
     import dongxuan_agent.web.app as web_app

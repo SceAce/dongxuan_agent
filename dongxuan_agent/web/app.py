@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -136,11 +137,13 @@ def create_app() -> FastAPI:
         active_settings, active_adapter, active_store = deps
         _require_password(request.password, active_settings)
         case = _case_or_404(lambda: active_store.get_case(case_id))
-        result = _run_analysis(lambda: analyze_bazi(request, active_adapter, _case_memory(case)))
+        active_request = _with_inferred_target_year(request)
+        result = _run_analysis(lambda: analyze_bazi(active_request, active_adapter, _case_memory(case)))
         conclusion = _extract_conclusion(result["analysis"])
+        active_store.merge_chart_snapshot(case_id, result["context"])
         active_store.append_record(
             case_id,
-            question=request.question,
+            question=active_request.question,
             analysis=result["analysis"],
             conclusion=conclusion,
             context=result["context"],
@@ -206,6 +209,26 @@ def _case_memory(case: dict) -> dict:
             for record in case.get("records", [])[-5:]
         ],
     }
+
+
+def _with_inferred_target_year(request: BaziAnalyzeRequest) -> BaziAnalyzeRequest:
+    if request.target_year is not None:
+        return request
+    inferred = _infer_target_year(request.question)
+    if inferred is None:
+        return request
+    payload = request.model_dump()
+    payload["target_year"] = inferred
+    return BaziAnalyzeRequest(**payload)
+
+
+def _infer_target_year(question: str | None) -> int | None:
+    if not question:
+        return None
+    years = [int(match) for match in re.findall(r"(?<!\d)(19\d{2}|20\d{2}|21\d{2})(?=年?)(?!\d)", question)]
+    if not years:
+        return None
+    return years[-1]
 
 
 def _extract_conclusion(analysis: str) -> str:

@@ -71,3 +71,27 @@ def test_case_store_appends_analysis_record_without_unbounded_history(tmp_path):
 
     assert [record["question"] for record in updated["records"]] == ["第二问", "第三问"]
     assert updated["records"][-1]["conclusion"] == "C3"
+
+
+def test_case_store_merges_bazi_luck_and_year_snapshot(tmp_path):
+    from dongxuan_agent.web.memory import CaseStore
+
+    store = CaseStore(tmp_path / "memory.json")
+    case = store.create_case({"title": "案例一", "system": "bazi"})
+
+    updated = store.merge_chart_snapshot(
+        case["id"],
+        {
+            "calendar": {"datetime": "2006-11-05T06:00:00+08:00"},
+            "day_master": {"stem": "戊"},
+            "pillars": [{"name": "年柱", "ganzhi": "丙戌"}],
+            "luck": {"cycles": [{"ganzhi": "壬寅"}]},
+            "analysis_hints": {"target_year": 2026, "year_ganzhi": "丙午"},
+            "luck_year_remedy": {"combined_effect": "药病并见"},
+        },
+    )
+
+    assert updated["bazi"]["pillars"][0]["ganzhi"] == "丙戌"
+    assert updated["luck"]["cycles"][0]["ganzhi"] == "壬寅"
+    assert updated["notes"]["year_hints"]["2026"]["year_ganzhi"] == "丙午"
+    assert updated["notes"]["luck_year_remedy"]["2026"]["combined_effect"] == "药病并见"

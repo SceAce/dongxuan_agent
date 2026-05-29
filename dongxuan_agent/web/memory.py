@@ -79,6 +79,30 @@ class CaseStore:
         self._write(data)
         return deepcopy(case)
 
+    def merge_chart_snapshot(self, case_id: str, context: dict[str, Any]) -> dict[str, Any]:
+        data = self._read()
+        case = _find_in_data(data, case_id)
+        case["bazi"] = {
+            "calendar": context.get("calendar", {}),
+            "day_master": context.get("day_master"),
+            "pillars": context.get("pillars", []),
+        }
+        case["luck"] = context.get("luck") or {}
+        notes = _dict(case.get("notes"))
+        if context.get("analysis_hints"):
+            year = str(context["analysis_hints"].get("target_year"))
+            notes.setdefault("year_hints", {})[year] = context["analysis_hints"]
+        if context.get("luck_year_remedy"):
+            year = str((context.get("analysis_hints") or {}).get("target_year", "unknown"))
+            notes.setdefault("luck_year_remedy", {})[year] = context["luck_year_remedy"]
+        case["notes"] = notes
+        case["updated_at"] = _now()
+        normalized = _normalize_case(case)
+        case.clear()
+        case.update(normalized)
+        self._write(data)
+        return deepcopy(case)
+
     def _find_case(self, case_id: str) -> dict[str, Any]:
         return _find_in_data(self._read(), case_id)
 
