@@ -468,12 +468,12 @@ def test_frontend_supports_local_conversation_switching_without_backend_writes()
         "/api/cases",
         "/api/cases/list",
         "如果第一次使用",
-        "sudo",
         "已验证事实",
         "待验证事实",
         "背景",
     ]:
         assert text in html
+    assert "管理员可输入 sudo 查看全部" not in html
     assert "/api/session" not in html
 
 
