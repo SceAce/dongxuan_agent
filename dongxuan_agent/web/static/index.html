@@ -107,6 +107,48 @@
       .conversation-item.active small {
         color: rgba(255, 255, 255, 0.78);
       }
+      .node-panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      .node-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .node-head strong {
+        font-size: 15px;
+      }
+      .node-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .node-item {
+        display: grid;
+        gap: 2px;
+        max-width: 180px;
+        min-height: 42px;
+        text-align: left;
+        font-size: 13px;
+      }
+      .node-item small {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .node-item.active {
+        background: var(--accent-2);
+        border-color: var(--accent-2);
+        color: #fff;
+      }
+      .node-item.active small {
+        color: rgba(255, 255, 255, 0.78);
+      }
       button {
         border: 1px solid var(--line);
         background: #f8faf7;
@@ -390,6 +432,13 @@
           <h2>分析结果</h2>
           <span class="readonly">只读模式</span>
         </div>
+        <div class="node-panel">
+          <div class="node-head">
+            <strong>问题节点</strong>
+            <span class="readonly">当前节点</span>
+          </div>
+          <div class="node-list" id="node-list"></div>
+        </div>
         <div class="result-stack" id="analysis">
           <details class="result-card card-context">
             <summary>确认前置信息</summary>
@@ -412,12 +461,13 @@
     </main>
     <script>
       const DEFAULT_CONTEXT_TEXT = "";
-      const state = { system: "bazi", conversations: [], activeConversationId: null, currentAnalysisRaw: "等待提交。" };
+      const state = { system: "bazi", conversations: [], activeConversationId: null, activeRecordId: null, currentAnalysisRaw: "等待提交。" };
       const form = document.querySelector("#form");
       const submit = document.querySelector("#submit");
       const analysis = document.querySelector("#analysis");
       const context = document.querySelector("#context");
       const conversationList = document.querySelector("#conversation-list");
+      const nodeList = document.querySelector("#node-list");
 
       document.querySelector("#tab-bazi").addEventListener("click", () => switchSystem("bazi"));
       document.querySelector("#tab-daliuren").addEventListener("click", () => switchSystem("daliuren"));
@@ -463,6 +513,7 @@
           renderAnalysisCards(data.analysis);
           context.textContent = JSON.stringify(data.context, null, 2);
           await saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });
+          await refreshActiveConversation();
         } catch (error) {
           renderAnalysisCards(`## 结论\n<span class="error">${escapeHtml(error.message)}</span>`);
           await saveActiveConversation({ analysis: `## 结论\n${error.message}`, contextText: "" });
@@ -531,6 +582,7 @@
         state.activeConversationId = state.conversations[0].id;
         renderConversationList();
         applyActiveConversation();
+        renderNodeList();
       }
 
       function buildConversation(overrides = {}) {
@@ -583,6 +635,7 @@
         }
         await saveActiveConversation();
         state.activeConversationId = id;
+        state.activeRecordId = null;
         applyActiveConversation();
         renderConversationList();
       }
@@ -600,6 +653,7 @@
         state.conversations = state.conversations.filter((item) => item.id !== id);
         const next = state.conversations[Math.max(0, index - 1)] || state.conversations[0];
         state.activeConversationId = next.id;
+        state.activeRecordId = null;
         applyActiveConversation();
         renderConversationList();
       }
@@ -619,6 +673,25 @@
         Object.assign(conversation, updated);
       }
 
+      async function refreshActiveConversation() {
+        if (!state.activeConversationId) {
+          return;
+        }
+        const response = await fetch(`/api/cases/${encodeURIComponent(state.activeConversationId)}`);
+        const updated = await parseResponse(response);
+        if (!response.ok) {
+          throw new Error(updated.detail || `HTTP ${response.status}`);
+        }
+        const index = state.conversations.findIndex((item) => item.id === state.activeConversationId);
+        if (index >= 0) {
+          state.conversations[index] = updated;
+        }
+        const records = updated.records || [];
+        state.activeRecordId = records[records.length - 1]?.id || null;
+        applyActiveConversation();
+        renderConversationList();
+      }
+
       function applyActiveConversation() {
         const conversation = getActiveConversation();
         if (!conversation) {
@@ -628,8 +701,15 @@
         writeFormData(memoryToFormData(conversation));
         const records = conversation.records || [];
         const latest = records[records.length - 1];
-        renderAnalysisCards(conversation.analysis || latest?.analysis || "等待提交。");
-        context.textContent = conversation.contextText || (latest?.context ? JSON.stringify(latest.context, null, 2) : DEFAULT_CONTEXT_TEXT);
+        const activeRecord = records.find((record) => record.id === state.activeRecordId) || latest;
+        state.activeRecordId = activeRecord?.id || null;
+        if (activeRecord) {
+          showRecordNode(activeRecord);
+        } else {
+          renderAnalysisCards(conversation.analysis || "等待提交。");
+          context.textContent = conversation.contextText || DEFAULT_CONTEXT_TEXT;
+        }
+        renderNodeList();
       }
 
       function readFormData() {
@@ -723,6 +803,43 @@
         conversationList.querySelectorAll("[data-id]").forEach((button) => {
           button.addEventListener("click", () => switchConversation(button.dataset.id));
         });
+      }
+
+      function renderNodeList() {
+        const conversation = getActiveConversation();
+        const records = conversation?.records || [];
+        if (!records.length) {
+          nodeList.innerHTML = '<span class="readonly">暂无历史节点</span>';
+          return;
+        }
+        nodeList.innerHTML = records
+          .map((record, index) => {
+            const active = record.id === state.activeRecordId ? " active" : "";
+            const title = record.question || `问题 ${index + 1}`;
+            return `
+              <button class="node-item${active}" type="button" data-record-id="${escapeHtml(record.id)}">
+                <span>${escapeHtml(title.slice(0, 18))}</span>
+                <small>${formatDateTime(record.created_at)}</small>
+              </button>
+            `;
+          })
+          .join("");
+        nodeList.querySelectorAll("[data-record-id]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const record = records.find((item) => item.id === button.dataset.recordId);
+            if (record) {
+              showRecordNode(record);
+              renderNodeList();
+            }
+          });
+        });
+      }
+
+      function showRecordNode(record) {
+        state.activeRecordId = record.id;
+        form.question.value = record.question || form.question.value;
+        renderAnalysisCards(record.analysis || `## 结论\n${record.conclusion || "暂无结论。"}`);
+        context.textContent = record.context ? JSON.stringify(record.context, null, 2) : DEFAULT_CONTEXT_TEXT;
       }
 
       function formatDateTime(value) {

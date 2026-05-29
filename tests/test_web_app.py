@@ -437,6 +437,25 @@ def test_frontend_supports_local_conversation_switching_without_backend_writes()
     assert "/api/session" not in html
 
 
+def test_frontend_can_switch_between_question_nodes():
+    from pathlib import Path
+
+    html = Path("dongxuan_agent/web/static/index.html").read_text(encoding="utf-8")
+
+    for text in [
+        "node-list",
+        "问题节点",
+        "renderNodeList",
+        "showRecordNode",
+        "activeRecordId",
+        "当前节点",
+        "refreshActiveConversation",
+        "data-record-id",
+    ]:
+        assert text in html
+    assert "records[records.length - 1]" in html
+
+
 def test_index_page_is_not_cached_so_frontend_updates_are_visible(monkeypatch):
     monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
     from dongxuan_agent.web.app import create_app
