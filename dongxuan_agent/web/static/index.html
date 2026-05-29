@@ -487,7 +487,16 @@
     </main>
     <script>
       const DEFAULT_CONTEXT_TEXT = "";
-      const state = { system: "bazi", conversations: [], activeConversationId: null, activeRecordId: null, currentAnalysisRaw: "等待提交。", passwordConfirmed: false };
+      const state = {
+        system: "bazi",
+        conversations: [],
+        activeConversationId: null,
+        activeRecordId: null,
+        currentAnalysisRaw: "等待提交。",
+        passwordConfirmed: false,
+        saveInFlight: null,
+        saveQueued: false,
+      };
       const form = document.querySelector("#form");
       const submit = document.querySelector("#submit");
       const analysis = document.querySelector("#analysis");
@@ -535,12 +544,12 @@
         context.textContent = "";
         try {
           const body = buildPayload();
-          const endpoint =
-            state.activeConversationId && state.system === "bazi"
-              ? `/api/cases/${encodeURIComponent(state.activeConversationId)}/bazi/analyze`
-              : state.system === "bazi"
-                ? "/api/bazi/analyze"
-                : "/api/daliuren/analyze";
+          const usesCaseEndpoint = Boolean(state.activeConversationId && state.system === "bazi");
+          const endpoint = usesCaseEndpoint
+            ? `/api/cases/${encodeURIComponent(state.activeConversationId)}/bazi/analyze`
+            : state.system === "bazi"
+              ? "/api/bazi/analyze"
+              : "/api/daliuren/analyze";
           const response = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -552,8 +561,11 @@
           }
           renderAnalysisCards(data.analysis);
           context.textContent = JSON.stringify(data.context, null, 2);
-          await saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });
-          await refreshActiveConversation();
+          if (usesCaseEndpoint) {
+            await refreshActiveConversation();
+          } else {
+            await saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });
+          }
         } catch (error) {
           const errorAnalysis = `## 结论\n${error.message}`;
           renderAnalysisCards(errorAnalysis);
@@ -721,14 +733,28 @@
         if (!conversation || !state.passwordConfirmed) {
           return;
         }
-        conversation.system = state.system;
-        conversation.formData = readFormData();
-        conversation.analysis = overrides.analysis ?? state.currentAnalysisRaw ?? conversation.analysis;
-        conversation.contextText = overrides.contextText ?? context.textContent ?? "";
-        conversation.title = buildConversationTitle(conversation);
-        conversation.updated_at = new Date().toISOString();
-        const updated = await patchJson(`/api/cases/${encodeURIComponent(conversation.id)}`, casePayloadFromConversation(conversation));
-        Object.assign(conversation, updated);
+        if (state.saveInFlight) {
+          state.saveQueued = true;
+          return state.saveInFlight;
+        }
+        state.saveInFlight = (async () => {
+          do {
+            state.saveQueued = false;
+            conversation.system = state.system;
+            conversation.formData = readFormData();
+            conversation.analysis = overrides.analysis ?? state.currentAnalysisRaw ?? conversation.analysis;
+            conversation.contextText = overrides.contextText ?? context.textContent ?? "";
+            conversation.title = buildConversationTitle(conversation);
+            conversation.updated_at = new Date().toISOString();
+            const updated = await patchJson(`/api/cases/${encodeURIComponent(conversation.id)}`, casePayloadFromConversation(conversation));
+            Object.assign(conversation, updated);
+          } while (state.saveQueued);
+        })();
+        try {
+          await state.saveInFlight;
+        } finally {
+          state.saveInFlight = null;
+        }
       }
 
       async function refreshActiveConversation() {

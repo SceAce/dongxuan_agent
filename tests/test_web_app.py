@@ -512,6 +512,20 @@ def test_frontend_saves_plain_error_text_not_error_html():
     assert "saveActiveConversation({ analysis: errorAnalysis" in html
 
 
+def test_frontend_avoids_redundant_case_save_after_successful_analysis():
+    from pathlib import Path
+
+    html = Path("dongxuan_agent/web/static/index.html").read_text(encoding="utf-8")
+
+    assert "await refreshActiveConversation();" in html
+    assert "const usesCaseEndpoint" in html
+    assert "if (usesCaseEndpoint)" in html
+    assert "await saveActiveConversation({ analysis: data.analysis, contextText: context.textContent });\n          await refreshActiveConversation();" not in html
+    assert "state.saveInFlight" in html
+    assert "state.saveQueued" in html
+    assert "if (state.saveInFlight)" in html
+
+
 def test_index_page_is_not_cached_so_frontend_updates_are_visible(monkeypatch):
     monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
     from dongxuan_agent.web.app import create_app
