@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DONGXUAN_LLM_PROVIDER=echo \
+    DONGXUAN_LLM_PROVIDER=openai \
     DONGXUAN_MEMORY_PATH=/data/dongxuan/memory.json
 
 WORKDIR /app
