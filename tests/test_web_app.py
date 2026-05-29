@@ -359,5 +359,18 @@ def test_frontend_supports_local_conversation_switching_without_backend_writes()
     assert "/api/session" not in html
 
 
+def test_index_page_is_not_cached_so_frontend_updates_are_visible(monkeypatch):
+    monkeypatch.setenv("DONGXUAN_LLM_PROVIDER", "echo")
+    from dongxuan_agent.web.app import create_app
+    from fastapi.testclient import TestClient
+
+    client = TestClient(create_app())
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert "conversation-list" in response.text
+
+
 def _json_roundtrip(value):
     return json.loads(json.dumps(value, ensure_ascii=False))
