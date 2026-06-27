@@ -20,3 +20,8 @@ def test_bazi_context_builds_full_payload_with_stable_fields():
     assert payload["luck_year_remedy"]["combined_effect"] == "药病并见"
     assert payload["imagery_analysis"]["main_image"]["evidence"]
     assert payload["rule_cards"]["mode"] == "year_event"
+    assert payload["knowledge_layers"]["layer_priority"] == ["理法", "象法", "案例"]
+    assert payload["knowledge_layers"]["book_sets"]["principle"]
+    assert payload["knowledge_layers"]["book_sets"]["symbolic"]
+    assert payload["knowledge_layers"]["book_sets"]["cases"]
+    assert payload["knowledge_layers"]["case_policy"]["prefer"] == "禄命派"

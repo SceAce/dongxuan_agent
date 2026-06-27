@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .chart import build_bazi_chart
 from .climate import analyze_climate
+from dongxuan_agent.bazi_knowledge import build_bazi_knowledge_context
 from .gods import build_god_candidates
 from .imagery import build_imagery_analysis
 from .integration import build_integrated_analysis
@@ -63,4 +64,5 @@ def build_bazi_context(
     payload["rule_cards"] = build_bazi_rule_context(question, target_year)
     payload["question"] = question
     payload["imagery_analysis"] = build_imagery_analysis(payload)
+    payload["knowledge_layers"] = build_bazi_knowledge_context()
     return payload

@@ -35,6 +35,8 @@ def test_bazi_session_outputs_chart_hints_and_rule_cards(capsys):
     assert payload["imagery_analysis"]["main_image"]["evidence"]
     assert payload["imagery_analysis"]["context_frame"]["age_stage"] == "大学/训练期"
     assert payload["rule_cards"]["mode"] == "year_event"
+    assert payload["knowledge_layers"]["layer_priority"] == ["理法", "象法", "案例"]
+    assert payload["knowledge_layers"]["case_policy"]["prefer"] == "禄命派"
 
 
 def test_bazi_session_can_include_prompt(capsys):
@@ -49,4 +51,6 @@ def test_bazi_session_can_include_prompt(capsys):
     output = capsys.readouterr().out
 
     assert "# 八字年份事件分析 Prompt" in output
+    assert "### 八字知识分层" in output
+    assert "案例偏好：禄命派" in output
     assert "## 八字工具上下文" in output
