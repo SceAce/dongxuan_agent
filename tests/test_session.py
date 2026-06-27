@@ -4,7 +4,7 @@ from daliuren_session import main
 
 
 def _extract_json_block(output: str) -> dict:
-    start = output.index("```json") + len("```json")
+    start = output.rindex("```json") + len("```json")
     end = output.index("```", start)
     return json.loads(output[start:end].strip())
 
@@ -15,9 +15,7 @@ def test_session_outputs_context_json(capsys):
         "--mode",
         "number",
         "--number",
-        "20",
-        "--gender",
-        "男",
+        "9",
         "--question",
         "测试",
         "--birth-year",
@@ -28,10 +26,17 @@ def test_session_outputs_context_json(capsys):
     payload = _extract_json_block(output)
 
     assert "## 大六壬工具上下文" in output
-    assert payload["divination"]["source_hour_branch"] == "未"
+    assert "## 大六壬测算输入" in output
+    assert "### 天地盘" in output
+    assert "### 四课" in output
+    assert "### 三传" in output
+    assert "| 传 | 神 | 遁干 | 旺衰 | 天将 | 天官 | 六亲 |" in output
+    assert payload["divination"]["source_hour_branch"] == "巳"
     assert payload["querent"]["life_branch"] == "戌"
-    assert payload["calendar"]["hour_branch"] == "未"
+    assert payload["calendar"]["hour_branch"] == "巳"
     assert "rule_cards" in payload
+    assert "knowledge_layers" in payload
+    assert payload["knowledge_layers"]["layer_priority"] == ["理法", "象根", "案例"]
     assert payload["rule_cards"]["question_type"] == "通用"
     assert payload["rule_cards"]["cards"]
 

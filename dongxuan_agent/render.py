@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from .chart import DaliurenChart
 from .divination import DaliurenDivination
 
@@ -14,6 +16,7 @@ def divination_to_json(divination: DaliurenDivination) -> dict:
 
 def render_chart_markdown(chart: DaliurenChart) -> str:
     cal = chart.calendar
+    plate_preview = json.dumps(chart.to_dict()["plate_preview"], ensure_ascii=False, indent=2)
     plate_rows = "\n".join(
         f"| {earth} | {heaven} | {chart.heavenly_generals.get(earth, '')} | {chart.heavenly_officers.get(earth, {}).get('name', '')} | {chart.six_relatives.get(earth, {}).get('relative', '')} |"
         for earth, heaven in chart.heaven_plate.items()
@@ -33,6 +36,12 @@ def render_chart_markdown(chart: DaliurenChart) -> str:
     ) or "| 无 | 无 | 无 | 无 |"
     uncertainty = "\n".join(f"- {item}" for item in chart.uncertainty)
     return f"""## 大六壬课盘
+
+### 盘面结构
+
+```json
+{plate_preview}
+```
 
 ### 基本信息
 

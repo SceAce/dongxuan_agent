@@ -17,21 +17,21 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", choices=("time", "live-hour", "number"), default="time", help="起课方式。")
     parser.add_argument("--hour-branch", help="活时起课所报/所抽地支。")
     parser.add_argument("--number", type=int, help="报数起课数字。")
-    parser.add_argument("--gender", choices=("男", "女"), help="测算必须字段：性别。")
+    parser.add_argument("--gender", choices=("男", "女"), help="性别；需要行年时用于男女顺逆。")
     parser.add_argument("--question", help="测算必须字段：所问事。")
     parser.add_argument("--background", help="当前背景；年运等命理类问题可省略。")
     parser.add_argument("--birth-year", type=int, help="本命出生年份；提供后自动推本命与行年。")
     args = parser.parse_args(argv)
 
     value = args.datetime or datetime.now().isoformat(timespec="seconds")
-    if args.gender or args.question or args.mode != "time" or args.hour_branch or args.number or args.birth_year:
+    if args.gender or args.question or args.mode != "time" or args.hour_branch or args.number is not None or args.birth_year:
         divination = build_divination(
             value,
             timezone=args.timezone,
             mode=args.mode,
             hour_branch=args.hour_branch,
             number=args.number,
-            gender=args.gender or "",
+            gender=args.gender,
             question=args.question or "",
             background=args.background,
             birth_year=args.birth_year,

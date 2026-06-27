@@ -6,6 +6,7 @@ from typing import Literal
 from dongxuan_agent.bazi.context import build_bazi_context
 from dongxuan_agent.chart import build_chart
 from dongxuan_agent.divination import build_divination
+from dongxuan_agent.daliuren_knowledge import build_daliuren_knowledge_context
 from dongxuan_agent.render import chart_to_json, divination_to_json
 from dongxuan_agent.rule_cards import build_rule_context
 
@@ -41,6 +42,7 @@ def analyze_daliuren(request, adapter: LLMAdapter) -> dict:
 
 
 def build_daliuren_context(request) -> dict:
+    knowledge = build_daliuren_knowledge_context()
     if _needs_divination(request):
         divination = build_divination(
             request.datetime,
@@ -55,10 +57,12 @@ def build_daliuren_context(request) -> dict:
         )
         context = divination_to_json(divination)
         context["rule_cards"] = build_rule_context(request.question)
+        context["knowledge_layers"] = knowledge
         return context
 
     context = chart_to_json(build_chart(request.datetime, timezone=request.timezone))
     context["rule_cards"] = build_rule_context(None)
+    context["knowledge_layers"] = knowledge
     return context
 
 

@@ -8,7 +8,8 @@ from pathlib import Path
 
 from dongxuan_agent.chart import build_chart
 from dongxuan_agent.divination import build_divination
-from dongxuan_agent.render import chart_to_json, divination_to_json
+from dongxuan_agent.daliuren_knowledge import build_daliuren_knowledge_context, render_daliuren_knowledge_markdown
+from dongxuan_agent.render import chart_to_json, divination_to_json, render_chart_markdown, render_divination_markdown
 from dongxuan_agent.rule_cards import build_rule_context
 
 
@@ -25,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", choices=("time", "live-hour", "number"), default="time", help="起课方式。")
     parser.add_argument("--hour-branch", help="活时起课所报/所抽地支。")
     parser.add_argument("--number", type=int, help="报数起课数字。")
-    parser.add_argument("--gender", choices=("男", "女"), help="测算必须字段：性别。")
+    parser.add_argument("--gender", choices=("男", "女"), help="性别；需要行年时用于男女顺逆。")
     parser.add_argument("--question", help="测算必须字段：所问事。")
     parser.add_argument("--background", help="当前背景；年运等命理类问题可省略。")
     parser.add_argument("--birth-year", type=int, help="本命出生年份；提供后自动推本命与行年。")
@@ -33,11 +34,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     value = args.datetime or datetime.now().isoformat(timespec="seconds")
-    payload = _build_payload(args, value)
+    payload, rendered_chart = _build_payload(args, value)
 
     if args.include_prompt:
         print(_prompt_path().read_text(encoding="utf-8").strip())
         print("\n---\n")
+    print(render_daliuren_knowledge_markdown().strip())
+    print("\n---\n")
+    print(rendered_chart.strip())
+    print("\n---\n")
     print("## 大六壬工具上下文\n")
     print("将下面 JSON 作为唯一课盘依据；分析时按 prompt 结构输出，不要脱离字段自由发挥。\n")
     print("```json")
@@ -46,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _build_payload(args: argparse.Namespace, value: str) -> dict:
+def _build_payload(args: argparse.Namespace, value: str) -> tuple[dict, str]:
     needs_divination = any((
         args.gender,
         args.question,
@@ -57,9 +62,11 @@ def _build_payload(args: argparse.Namespace, value: str) -> dict:
         args.birth_year is not None,
     ))
     if not needs_divination:
-        payload = chart_to_json(build_chart(value, timezone=args.timezone))
+        chart = build_chart(value, timezone=args.timezone)
+        payload = chart_to_json(chart)
         payload["rule_cards"] = build_rule_context(None)
-        return payload
+        payload["knowledge_layers"] = build_daliuren_knowledge_context()
+        return payload, render_chart_markdown(chart)
 
     divination = build_divination(
         value,
@@ -67,14 +74,15 @@ def _build_payload(args: argparse.Namespace, value: str) -> dict:
         mode=args.mode,
         hour_branch=args.hour_branch,
         number=args.number,
-        gender=args.gender or "",
+        gender=args.gender,
         question=args.question or "",
         background=args.background,
         birth_year=args.birth_year,
     )
     payload = divination_to_json(divination)
     payload["rule_cards"] = build_rule_context(args.question)
-    return payload
+    payload["knowledge_layers"] = build_daliuren_knowledge_context()
+    return payload, render_divination_markdown(divination)
 
 
 def _prompt_path() -> Path:

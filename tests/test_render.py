@@ -69,7 +69,7 @@ def test_divination_render_and_json_include_querent_fields():
     payload = divination_to_json(divination)
     rendered = render_divination_markdown(divination)
 
-    assert payload["divination"]["source_hour_branch"] == "未"
+    assert payload["divination"]["source_hour_branch"] == "戌"
     assert payload["querent"]["birth_year_ganzhi"] == "庚戌"
     assert "## 大六壬测算输入" in rendered
     assert "本命：1970年（庚戌，命戌）" in rendered

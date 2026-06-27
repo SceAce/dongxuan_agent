@@ -20,22 +20,50 @@ class DaliurenDivination:
         return payload
 
 
+HOUR_TO_BRANCH = {
+    0: "子",
+    1: "丑",
+    2: "丑",
+    3: "寅",
+    4: "寅",
+    5: "卯",
+    6: "卯",
+    7: "辰",
+    8: "辰",
+    9: "巳",
+    10: "巳",
+    11: "午",
+    12: "午",
+    13: "未",
+    14: "未",
+    15: "申",
+    16: "申",
+    17: "酉",
+    18: "酉",
+    19: "戌",
+    20: "戌",
+    21: "亥",
+    22: "亥",
+    23: "子",
+}
+
+
 def number_to_hour_branch(number: int) -> str:
-    if number <= 0:
-        raise ValueError("报数必须为正整数")
-    return BRANCHES[(number - 1) % 12]
+    if number < 0:
+        raise ValueError("报数不能为负数")
+    return HOUR_TO_BRANCH[number % 24]
 
 
 def calculate_querent(
     *,
-    gender: str,
+    gender: str | None,
     question: str,
     chart_year: int,
     background: str | None = None,
     birth_year: int | None = None,
 ) -> dict[str, str | int | None]:
     errors = []
-    if gender not in {"男", "女"}:
+    if gender is not None and gender not in {"男", "女"}:
         errors.append("性别必须为男或女")
     if not question.strip():
         errors.append("所问事不能为空")
@@ -63,7 +91,8 @@ def calculate_querent(
     result["birth_year_ganzhi"] = birth_gz
     result["life_branch"] = birth_gz[1]
     result["virtual_age"] = virtual_age
-    result["traveling_year"] = traveling_year(gender, virtual_age)
+    if gender is not None:
+        result["traveling_year"] = traveling_year(gender, virtual_age)
     return result
 
 
@@ -90,7 +119,7 @@ def build_divination(
     mode: str = "time",
     hour_branch: str | None = None,
     number: int | None = None,
-    gender: str,
+    gender: str | None,
     question: str,
     background: str | None = None,
     birth_year: int | None = None,
@@ -130,7 +159,7 @@ def build_divination(
 
 
 def _normalize_hour_branch(hour_branch: str) -> str:
-    value = hour_branch.strip()
+    value = hour_branch.strip().removesuffix("时")
     if value not in BRANCHES:
         raise ValueError("hour_branch 必须为十二地支之一")
     return value
@@ -142,7 +171,7 @@ def _mode_rule(mode: str) -> str:
     if mode == "live-hour":
         return "活时起课：不换日、不换月将，只以所报/所抽地支替换时辰。"
     if mode == "number":
-        return "报数起课：子1、丑2至亥12，超过12取余，余0作亥；不换日、不换月将，只换时辰。"
+        return "报数起课：按现代小时映射为时辰，0/23为子，1/2为丑，依次类推；超过24先取模；不换日、不换月将，只换时辰。"
     raise ValueError(mode)
 
 

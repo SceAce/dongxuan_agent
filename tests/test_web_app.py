@@ -81,6 +81,91 @@ def test_daliuren_analyze_matches_terminal_context_builder(monkeypatch):
     )
     expected_context = divination_to_json(divination)
     expected_context["rule_cards"] = build_rule_context(request["question"])
+    expected_context["knowledge_layers"] = {
+        "layer_priority": ["理法", "象根", "案例"],
+        "policy": "先理后象，案例只作类比和验例，不得越过课传结构直接定断。",
+        "topic_pages": [
+            {
+                "name": "大六壬-理法",
+                "path": "/home/source/Documents/东玄知识库/wiki/topics/大六壬-理法.md",
+                "role": "先定课体、四课、三传、旺衰、遁干、空亡与判断秩序。",
+                "key_points": ["四课定结构", "三传看过程与归结", "旺衰空亡校正虚实", "象理合参边界"],
+            },
+            {
+                "name": "大六壬-象根",
+                "path": "/home/source/Documents/东玄知识库/wiki/topics/大六壬-象根.md",
+                "role": "解释十二天将、五行、十二支等象义来源与边界。",
+                "key_points": ["象从何来", "象能延伸到哪里", "固定象义只能当词库"],
+            },
+            {
+                "name": "大六壬-案例总览",
+                "path": "/home/source/Documents/东玄知识库/wiki/topics/大六壬-案例总览.md",
+                "role": "提供古案、近代案、现代案的取象路径与验辞样本。",
+                "key_points": ["邵彦和断案新编", "牧夫占验", "林烽现代案例", "案例只做类比"],
+            },
+        ],
+        "principle_pages": [
+            {
+                "name": "课体与三传",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/课体与三传.md",
+                "role": "先看发用与三传归结，不先落固定象义。",
+            },
+            {
+                "name": "四课与类神",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/四课与类神.md",
+                "role": "先定人我、主客、内外，再找类神落点。",
+            },
+            {
+                "name": "旺衰空亡与遁干",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/旺衰空亡与遁干.md",
+                "role": "以力量、虚实、暗线和应期校正断语。",
+            },
+            {
+                "name": "象理合参",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/象理合参.md",
+                "role": "象义只能解释理法已经成立的关系。",
+            },
+        ],
+        "image_pages": [
+            {
+                "name": "十二天将象根",
+                "path": "/home/source/Documents/东玄知识库/wiki/images/daliuren/十二天将象根.md",
+                "role": "把天将当成人事状态与角色来源，不当成结论本身。",
+            },
+            {
+                "name": "五行与十二支本义",
+                "path": "/home/source/Documents/东玄知识库/wiki/images/daliuren/五行与十二支本义.md",
+                "role": "保留五行、方位、时令、身体、场景的根义。",
+            },
+            {
+                "name": "类象边界",
+                "path": "/home/source/Documents/东玄知识库/wiki/images/daliuren/类象边界.md",
+                "role": "明确固定象义的使用边界，防止一象多断。",
+            },
+        ],
+        "case_pages": [
+            {
+                "name": "邵彦和-断案新编",
+                "path": "/home/source/Documents/东玄知识库/wiki/cases/daliuren/邵彦和-断案新编.md",
+                "role": "古案主轴，观察课式、问类、断语与验辞。",
+            },
+            {
+                "name": "牧夫占验",
+                "path": "/home/source/Documents/东玄知识库/wiki/cases/daliuren/牧夫占验.md",
+                "role": "补充近现代语境下的占验路径。",
+            },
+            {
+                "name": "林烽-大六壬经典案例解析",
+                "path": "/home/source/Documents/东玄知识库/wiki/cases/daliuren/林烽-大六壬经典案例解析.md",
+                "role": "现代案例目录源，优先用 clean 版与可复核文本。",
+            },
+        ],
+        "source_status": {
+            "modern_case_clean_pdf": "/home/source/Documents/东玄/大六壬/2433184671565302.林烽-《大六壬经典案例解析》109页.pdf",
+            "modern_case_archive_pdf": "/home/source/Documents/东玄/大六壬/02.林烽-《大六壬经典案例解析》109页【666周易网：www.666zhouyi.com】.pdf",
+            "modern_case_ocr": "现阶段 OCR 文本质量不足，只作目录与归档源，不作全文断案依据。",
+        },
+    }
 
     client = TestClient(create_app())
     request["password"] = "alice"
@@ -103,6 +188,91 @@ def test_daliuren_time_mode_without_divination_matches_chart_session(monkeypatch
     request = {"password": "alice", "datetime": "2026-05-28 20:00:00", "timezone": "Asia/Shanghai", "mode": "time"}
     expected_context = chart_to_json(build_chart(request["datetime"], timezone=request["timezone"]))
     expected_context["rule_cards"] = build_rule_context(None)
+    expected_context["knowledge_layers"] = {
+        "layer_priority": ["理法", "象根", "案例"],
+        "policy": "先理后象，案例只作类比和验例，不得越过课传结构直接定断。",
+        "topic_pages": [
+            {
+                "name": "大六壬-理法",
+                "path": "/home/source/Documents/东玄知识库/wiki/topics/大六壬-理法.md",
+                "role": "先定课体、四课、三传、旺衰、遁干、空亡与判断秩序。",
+                "key_points": ["四课定结构", "三传看过程与归结", "旺衰空亡校正虚实", "象理合参边界"],
+            },
+            {
+                "name": "大六壬-象根",
+                "path": "/home/source/Documents/东玄知识库/wiki/topics/大六壬-象根.md",
+                "role": "解释十二天将、五行、十二支等象义来源与边界。",
+                "key_points": ["象从何来", "象能延伸到哪里", "固定象义只能当词库"],
+            },
+            {
+                "name": "大六壬-案例总览",
+                "path": "/home/source/Documents/东玄知识库/wiki/topics/大六壬-案例总览.md",
+                "role": "提供古案、近代案、现代案的取象路径与验辞样本。",
+                "key_points": ["邵彦和断案新编", "牧夫占验", "林烽现代案例", "案例只做类比"],
+            },
+        ],
+        "principle_pages": [
+            {
+                "name": "课体与三传",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/课体与三传.md",
+                "role": "先看发用与三传归结，不先落固定象义。",
+            },
+            {
+                "name": "四课与类神",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/四课与类神.md",
+                "role": "先定人我、主客、内外，再找类神落点。",
+            },
+            {
+                "name": "旺衰空亡与遁干",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/旺衰空亡与遁干.md",
+                "role": "以力量、虚实、暗线和应期校正断语。",
+            },
+            {
+                "name": "象理合参",
+                "path": "/home/source/Documents/东玄知识库/wiki/principles/daliuren/象理合参.md",
+                "role": "象义只能解释理法已经成立的关系。",
+            },
+        ],
+        "image_pages": [
+            {
+                "name": "十二天将象根",
+                "path": "/home/source/Documents/东玄知识库/wiki/images/daliuren/十二天将象根.md",
+                "role": "把天将当成人事状态与角色来源，不当成结论本身。",
+            },
+            {
+                "name": "五行与十二支本义",
+                "path": "/home/source/Documents/东玄知识库/wiki/images/daliuren/五行与十二支本义.md",
+                "role": "保留五行、方位、时令、身体、场景的根义。",
+            },
+            {
+                "name": "类象边界",
+                "path": "/home/source/Documents/东玄知识库/wiki/images/daliuren/类象边界.md",
+                "role": "明确固定象义的使用边界，防止一象多断。",
+            },
+        ],
+        "case_pages": [
+            {
+                "name": "邵彦和-断案新编",
+                "path": "/home/source/Documents/东玄知识库/wiki/cases/daliuren/邵彦和-断案新编.md",
+                "role": "古案主轴，观察课式、问类、断语与验辞。",
+            },
+            {
+                "name": "牧夫占验",
+                "path": "/home/source/Documents/东玄知识库/wiki/cases/daliuren/牧夫占验.md",
+                "role": "补充近现代语境下的占验路径。",
+            },
+            {
+                "name": "林烽-大六壬经典案例解析",
+                "path": "/home/source/Documents/东玄知识库/wiki/cases/daliuren/林烽-大六壬经典案例解析.md",
+                "role": "现代案例目录源，优先用 clean 版与可复核文本。",
+            },
+        ],
+        "source_status": {
+            "modern_case_clean_pdf": "/home/source/Documents/东玄/大六壬/2433184671565302.林烽-《大六壬经典案例解析》109页.pdf",
+            "modern_case_archive_pdf": "/home/source/Documents/东玄/大六壬/02.林烽-《大六壬经典案例解析》109页【666周易网：www.666zhouyi.com】.pdf",
+            "modern_case_ocr": "现阶段 OCR 文本质量不足，只作目录与归档源，不作全文断案依据。",
+        },
+    }
 
     client = TestClient(create_app())
     request["password"] = "alice"

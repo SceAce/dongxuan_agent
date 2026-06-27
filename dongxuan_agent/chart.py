@@ -50,6 +50,15 @@ class DaliurenChart:
     uncertainty: tuple[str, ...]
 
     def to_dict(self) -> dict:
+        plate_preview = build_plate_preview(
+            self.earth_plate,
+            self.heaven_plate,
+            self.heavenly_generals,
+            self.heavenly_officers,
+            self.six_relatives,
+            self.four_lessons,
+            self.transmission_details,
+        )
         return {
             "calendar": {
                 "datetime": self.calendar.dt.isoformat(),
@@ -75,6 +84,7 @@ class DaliurenChart:
             "spirit_sha": self.spirit_sha,
             "xunkong": self.xunkong,
             "uncertainty": list(self.uncertainty),
+            "plate_preview": plate_preview,
         }
 
 
@@ -234,6 +244,60 @@ def build_lesson_bodies(transmissions: Transmissions) -> tuple[dict[str, str], .
 def build_brief_analysis(transmissions: Transmissions, lesson_bodies: tuple[dict[str, str], ...]) -> str:
     body_names = " ".join(item["name"] for item in lesson_bodies)
     return f"课体：{body_names}; {transmissions.note}"
+
+
+def build_plate_preview(
+    earth_plate: tuple[str, ...],
+    heaven_plate: dict[str, str],
+    heavenly_generals: dict[str, str],
+    heavenly_officers: dict[str, dict[str, str]],
+    six_relatives: dict[str, dict[str, str]],
+    four_lessons: tuple[Lesson, Lesson, Lesson, Lesson],
+    transmission_details: tuple[dict[str, str | None], dict[str, str | None], dict[str, str | None]],
+) -> dict:
+    earth_rows = [
+        {
+            "earth": earth,
+            "heaven": heaven_plate[earth],
+            "general": heavenly_generals[earth],
+            "officer": heavenly_officers[earth]["name"],
+            "relative": six_relatives[earth]["relative"],
+        }
+        for earth in earth_plate
+    ]
+    lesson_rows = []
+    for lesson in four_lessons:
+        lower_officer = heavenly_officers.get(lesson.lower, {}).get("name") if lesson.lower in heavenly_officers else None
+        upper_officer = heavenly_officers.get(lesson.upper, {}).get("name") if lesson.upper in heavenly_officers else None
+        lesson_rows.append(
+            {
+                "name": lesson.name,
+                "lower": lesson.lower,
+                "upper": lesson.upper,
+                "relation": lesson.relation,
+                "lower_officer": lower_officer,
+                "upper_officer": upper_officer,
+            }
+        )
+    transmission_rows = [
+        {
+            "name": name,
+            "branch": detail["branch"],
+            "earth": detail["earth"],
+            "relative": detail["relative"],
+            "dun_gan": detail["dun_gan"],
+            "season_state": detail["season_state"],
+            "general": detail["general"],
+            "officer": detail["officer"],
+        }
+        for name, detail in zip(("初传", "中传", "末传"), transmission_details, strict=True)
+    ]
+    return {
+        "earth_plate": earth_rows,
+        "four_lessons": lesson_rows,
+        "three_transmissions": transmission_rows,
+        "format": "天地盘 / 四课 / 三传",
+    }
 
 
 def build_chart_from_calendar(calendar: CalendarInfo, extra_spirit_positions: tuple[dict[str, str], ...] = ()) -> DaliurenChart:
