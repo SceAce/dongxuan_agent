@@ -24,6 +24,9 @@ def test_render_chart_markdown_contains_required_sections():
     assert "六亲" in rendered
     assert "神煞" in rendered
     assert "贵人" in rendered
+    assert "### 盘面结构" in rendered
+    assert '"four_lessons"' in rendered
+    assert "| 课 | 下 | 下地盘 | 上 | 关系 | 天将 | 天官 | 六亲 |" in rendered
     assert "| 传 | 神 | 遁干 | 旺衰 | 天将 | 天官 | 六亲 |" in rendered
     assert "不确定项" in rendered
 

@@ -22,7 +22,7 @@ def render_chart_markdown(chart: DaliurenChart) -> str:
         for earth, heaven in chart.heaven_plate.items()
     )
     lesson_rows = "\n".join(
-        f"| {lesson.name} | {lesson.lower} | {lesson.upper} | {lesson.relation} |"
+        f"| {lesson.name} | {lesson.lower} | {lesson.lower_branch} | {lesson.upper} | {lesson.relation} | {chart.heavenly_generals.get(lesson.lower_branch, '')} | {chart.heavenly_officers.get(lesson.lower_branch, {}).get('name', '')} | {chart.six_relatives.get(lesson.lower_branch, {}).get('relative', '')} |"
         for lesson in chart.four_lessons
     )
     trans_names = ["初传", "中传", "末传"]
@@ -60,8 +60,8 @@ def render_chart_markdown(chart: DaliurenChart) -> str:
 
 ### 四课
 
-| 课 | 下 | 上 | 关系 |
-|---|---|---|---|
+| 课 | 下 | 下地盘 | 上 | 关系 | 天将 | 天官 | 六亲 |
+|---|---|---|---|---|---|---|---|
 {lesson_rows}
 
 ### 三传
