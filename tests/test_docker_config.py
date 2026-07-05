@@ -28,9 +28,20 @@ def test_docker_source_checkout_includes_canonical_prompts():
         for line in Path(".dockerignore").read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     }
+    prompt_excluding_patterns = {
+        "/prompts",
+        "/prompts/",
+        "prompts",
+        "prompts/",
+        "prompts/**",
+        "*.md",
+        "**/*.md",
+        "*.markdown",
+        "**/*.markdown",
+    }
 
     assert "COPY . ." in dockerfile
-    assert not {"/prompts", "/prompts/", "prompts", "prompts/"} & dockerignore_entries
+    assert not prompt_excluding_patterns & dockerignore_entries
     assert Path("prompts/bazi.md").is_file()
     assert Path("prompts/daliuren.md").is_file()
     assert Path("prompts/liuyao.md").is_file()
