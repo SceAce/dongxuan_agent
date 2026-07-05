@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from dongxuan_agent.liuyao.cli import main
+from tools.liuyao.chart_wrapper import main
 
 
 if __name__ == "__main__":

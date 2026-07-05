@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from dongxuan_agent.daliuren.cli import main
+from tools.daliuren.chart_wrapper import main
 
 
 if __name__ == "__main__":

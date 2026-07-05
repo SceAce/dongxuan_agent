@@ -29,6 +29,23 @@ def test_root_chart_wrappers_import_after_cli_package_move():
     assert importlib.import_module("tools_daliuren_chart_wrapper").main
 
 
+def test_root_tool_wrappers_delegate_to_canonical_modules():
+    mappings = {
+        "tools_bazi_chart_wrapper": "tools.bazi.chart_wrapper",
+        "tools_bazi_session_wrapper": "tools.bazi.session_wrapper",
+        "tools_daliuren_chart_wrapper": "tools.daliuren.chart_wrapper",
+        "tools_daliuren_session_wrapper": "tools.daliuren.session_wrapper",
+        "tools_liuyao_chart_wrapper": "tools.liuyao.chart_wrapper",
+        "tools_liuyao_session_wrapper": "tools.liuyao.session_wrapper",
+    }
+
+    for root_module_name, canonical_module_name in mappings.items():
+        root_module = importlib.import_module(root_module_name)
+        canonical_module = importlib.import_module(canonical_module_name)
+
+        assert root_module.main is canonical_module.main
+
+
 def test_root_tool_wrappers_do_not_inject_legacy_tool_path():
     wrapper_paths = [
         "tools_bazi_chart_wrapper.py",
