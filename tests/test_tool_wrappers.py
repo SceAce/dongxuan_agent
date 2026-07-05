@@ -29,9 +29,19 @@ def test_root_chart_wrappers_import_after_cli_package_move():
     assert importlib.import_module("tools_daliuren_chart_wrapper").main
 
 
-def test_daliuren_root_wrapper_does_not_inject_legacy_tool_path():
-    source = Path("tools_daliuren_chart_wrapper.py").read_text()
+def test_root_tool_wrappers_do_not_inject_legacy_tool_path():
+    wrapper_paths = [
+        "tools_bazi_chart_wrapper.py",
+        "tools_bazi_session_wrapper.py",
+        "tools_daliuren_chart_wrapper.py",
+        "tools_daliuren_session_wrapper.py",
+        "tools_liuyao_chart_wrapper.py",
+        "tools_liuyao_session_wrapper.py",
+    ]
 
-    assert "daliuren_agent" not in source
-    assert "sys.path" not in source
-    assert "from pathlib import Path" not in source
+    for wrapper_path in wrapper_paths:
+        source = Path(wrapper_path).read_text()
+
+        assert "daliuren_agent" not in source
+        assert "sys.path" not in source
+        assert "from pathlib import Path" not in source
