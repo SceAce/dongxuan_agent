@@ -21,6 +21,21 @@ def test_dockerfile_defaults_to_persistent_memory_path():
     assert "EXPOSE 8000" in dockerfile
 
 
+def test_docker_source_checkout_includes_canonical_prompts():
+    dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
+    dockerignore_entries = {
+        line.strip()
+        for line in Path(".dockerignore").read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+
+    assert "COPY . ." in dockerfile
+    assert not {"/prompts", "/prompts/", "prompts", "prompts/"} & dockerignore_entries
+    assert Path("prompts/bazi.md").is_file()
+    assert Path("prompts/daliuren.md").is_file()
+    assert Path("prompts/liuyao.md").is_file()
+
+
 def test_env_example_documents_openai_compatible_settings():
     env_example = Path(".env.example").read_text(encoding="utf-8")
 
