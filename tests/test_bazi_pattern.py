@@ -1,5 +1,5 @@
 from dongxuan_agent.bazi import build_bazi_chart
-from dongxuan_agent.bazi_pattern import analyze_pattern
+from dongxuan_agent.bazi.pattern import analyze_pattern
 
 
 def test_pattern_uses_month_branch_main_qi_as_primary_candidate():

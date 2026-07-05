@@ -1,6 +1,6 @@
 import json
 
-from dongxuan_agent.liuyao_cli import main as chart_main
+from dongxuan_agent.liuyao.cli import main as chart_main
 
 
 def test_liuyao_cli_outputs_json_for_manual_lines(capsys):

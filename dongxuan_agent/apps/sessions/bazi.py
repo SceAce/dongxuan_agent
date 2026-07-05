@@ -7,7 +7,7 @@ from datetime import datetime
 
 from dongxuan_agent.apps.prompts import read_prompt
 from dongxuan_agent.bazi.context import build_bazi_context
-from dongxuan_agent.bazi_knowledge import build_bazi_knowledge_context
+from dongxuan_agent.bazi.knowledge import build_bazi_knowledge_context
 
 
 def main(argv: list[str] | None = None) -> int:

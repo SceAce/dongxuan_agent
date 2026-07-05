@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from .chart import build_bazi_chart
 from .climate import analyze_climate
-from dongxuan_agent.bazi_knowledge import build_bazi_knowledge_context
 from .gods import build_god_candidates
 from .imagery import build_imagery_analysis
 from .integration import build_integrated_analysis
+from .knowledge import build_bazi_knowledge_context
 from .luck_remedy import analyze_luck_year_remedy
 from .pattern import analyze_pattern
 from .remedy import analyze_remedy

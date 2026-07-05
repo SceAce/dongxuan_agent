@@ -1,6 +1,6 @@
 import json
 
-from dongxuan_agent.bazi_cli import main
+from dongxuan_agent.bazi.cli import main
 
 
 def test_bazi_cli_outputs_json(capsys):

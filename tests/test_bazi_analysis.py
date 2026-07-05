@@ -1,5 +1,5 @@
 from dongxuan_agent.bazi import build_bazi_chart
-from dongxuan_agent.bazi_analysis import build_year_analysis_hints
+from dongxuan_agent.bazi.year import build_year_analysis_hints
 
 
 def test_year_analysis_hints_for_2006_birth_target_2025():

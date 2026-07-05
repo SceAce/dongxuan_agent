@@ -1,6 +1,6 @@
 from dongxuan_agent.bazi import build_bazi_chart
-from dongxuan_agent.bazi_climate import analyze_climate
-from dongxuan_agent.bazi_strength import analyze_strength
+from dongxuan_agent.bazi.climate import analyze_climate
+from dongxuan_agent.bazi.strength import analyze_strength
 
 
 def test_element_forces_track_real_roots_and_effective_power():

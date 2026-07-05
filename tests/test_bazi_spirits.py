@@ -1,6 +1,6 @@
 from dongxuan_agent.bazi import build_bazi_chart
 from dongxuan_agent.bazi.spirits import build_bazi_spirit_sha_analysis
-from dongxuan_agent.bazi_analysis import build_year_analysis_hints
+from dongxuan_agent.bazi.year import build_year_analysis_hints
 
 
 def _payload():

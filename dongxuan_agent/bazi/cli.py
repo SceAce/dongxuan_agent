@@ -4,7 +4,7 @@ import argparse
 import json
 from datetime import datetime
 
-from .bazi import BaziChart, build_bazi_chart
+from .chart import BaziChart, build_bazi_chart
 
 
 def main(argv: list[str] | None = None) -> int:

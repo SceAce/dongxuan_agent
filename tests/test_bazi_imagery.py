@@ -1,15 +1,15 @@
 from dongxuan_agent.bazi import build_bazi_chart
 from dongxuan_agent.bazi.context import build_bazi_context
-from dongxuan_agent.bazi_analysis import build_year_analysis_hints
-from dongxuan_agent.bazi_climate import analyze_climate
-from dongxuan_agent.bazi_god import build_god_candidates
-from dongxuan_agent.bazi_imagery import build_imagery_analysis
-from dongxuan_agent.bazi_integration import build_integrated_analysis
-from dongxuan_agent.bazi_luck_remedy import analyze_luck_year_remedy
-from dongxuan_agent.bazi_pattern import analyze_pattern
-from dongxuan_agent.bazi_remedy import analyze_remedy
-from dongxuan_agent.bazi_rule_cards import build_bazi_rule_context
-from dongxuan_agent.bazi_strength import analyze_strength
+from dongxuan_agent.bazi.year import build_year_analysis_hints
+from dongxuan_agent.bazi.climate import analyze_climate
+from dongxuan_agent.bazi.gods import build_god_candidates
+from dongxuan_agent.bazi.imagery import build_imagery_analysis
+from dongxuan_agent.bazi.integration import build_integrated_analysis
+from dongxuan_agent.bazi.luck_remedy import analyze_luck_year_remedy
+from dongxuan_agent.bazi.pattern import analyze_pattern
+from dongxuan_agent.bazi.remedy import analyze_remedy
+from dongxuan_agent.bazi.rule_cards import build_bazi_rule_context
+from dongxuan_agent.bazi.strength import analyze_strength
 
 
 def _payload(question="推断2025年发生了什么"):

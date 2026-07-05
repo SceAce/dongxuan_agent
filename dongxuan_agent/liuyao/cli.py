@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from .liuyao import LiuyaoChart, build_liuyao_chart
+from .chart import LiuyaoChart, build_liuyao_chart
 
 
 def main(argv: list[str] | None = None) -> int:

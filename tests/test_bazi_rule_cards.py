@@ -1,4 +1,4 @@
-from dongxuan_agent.bazi_rule_cards import build_bazi_rule_context
+from dongxuan_agent.bazi.rule_cards import build_bazi_rule_context
 
 
 REQUIRED_CARD_FIELDS = {

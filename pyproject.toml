@@ -11,8 +11,8 @@ dependencies = [
 
 [project.scripts]
 daliuren-chart = "dongxuan_agent.cli:main"
-bazi-chart = "dongxuan_agent.bazi_cli:main"
-liuyao-chart = "dongxuan_agent.liuyao_cli:main"
+bazi-chart = "dongxuan_agent.bazi.cli:main"
+liuyao-chart = "dongxuan_agent.liuyao.cli:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
