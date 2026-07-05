@@ -20,4 +20,4 @@ def test_prompt_label_is_repo_relative():
 def test_read_prompt_returns_text():
     assert "# 八字年份事件分析 Prompt" in read_prompt("bazi")
     assert "# 大六壬测算 Prompt" in read_prompt("daliuren")
-    assert "# 六爻测算 Prompt" in read_prompt("liuyao")
+    assert "# 六爻分析 Prompt" in read_prompt("liuyao")
