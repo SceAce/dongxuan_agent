@@ -4,16 +4,10 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime
-from pathlib import Path
 
+from dongxuan_agent.apps.prompts import read_prompt
 from dongxuan_agent.bazi.context import build_bazi_context
 from dongxuan_agent.bazi_knowledge import build_bazi_knowledge_context
-
-
-PROMPT_PATHS = (
-    Path(__file__).with_name("BAZI_PROMPT.md"),
-    Path(__file__).with_name("bazi_prompt.md"),
-)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.include_prompt:
-        print(_prompt_path().read_text(encoding="utf-8").strip())
+        print(read_prompt("bazi").strip())
         print("\n---\n")
     print(_knowledge_summary().strip())
     print("\n---\n")
@@ -50,13 +44,6 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     print("```")
     return 0
-
-
-def _prompt_path() -> Path:
-    for path in PROMPT_PATHS:
-        if path.exists():
-            return path
-    raise FileNotFoundError("未找到 BAZI_PROMPT.md 或 bazi_prompt.md")
 
 
 def _knowledge_summary() -> str:

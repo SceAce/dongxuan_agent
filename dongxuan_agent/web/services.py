@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Literal
 
+from dongxuan_agent.apps.prompts import prompt_label, read_prompt
 from dongxuan_agent.bazi.context import build_bazi_context
 from dongxuan_agent.chart import build_chart
 from dongxuan_agent.divination import build_divination
@@ -11,8 +11,6 @@ from dongxuan_agent.render import chart_to_json, divination_to_json
 from dongxuan_agent.rule_cards import build_rule_context
 
 from .llm import LLMAdapter
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def analyze_bazi(request, adapter: LLMAdapter, case_memory: dict | None = None) -> dict:
@@ -27,18 +25,16 @@ def analyze_bazi(request, adapter: LLMAdapter, case_memory: dict | None = None) 
     )
     if case_memory:
         context["case_memory"] = case_memory
-    prompt_file = PROJECT_ROOT / "bazi_prompt.md"
-    prompt = prompt_file.read_text(encoding="utf-8")
+    prompt = read_prompt("bazi")
     analysis = adapter.analyze(system="bazi", prompt=prompt, context=context)
-    return _response("bazi", context, analysis, prompt_file)
+    return _response("bazi", context, analysis, prompt_label("bazi"))
 
 
 def analyze_daliuren(request, adapter: LLMAdapter) -> dict:
     context = build_daliuren_context(request)
-    prompt_file = PROJECT_ROOT / "daliuren_prompt.md"
-    prompt = prompt_file.read_text(encoding="utf-8")
+    prompt = read_prompt("daliuren")
     analysis = adapter.analyze(system="daliuren", prompt=prompt, context=context)
-    return _response("daliuren", context, analysis, prompt_file)
+    return _response("daliuren", context, analysis, prompt_label("daliuren"))
 
 
 def build_daliuren_context(request) -> dict:
@@ -80,13 +76,13 @@ def _needs_divination(request) -> bool:
     )
 
 
-def _response(system: Literal["bazi", "daliuren"], context: dict, analysis: str, prompt_file: Path) -> dict:
+def _response(system: Literal["bazi", "daliuren"], context: dict, analysis: str, prompt_file: str) -> dict:
     return {
         "system": system,
         "context": context,
         "analysis": analysis,
         "meta": {
             "readonly": True,
-            "prompt_file": prompt_file.name,
+            "prompt_file": prompt_file,
         },
     }

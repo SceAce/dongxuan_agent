@@ -1,7 +1,7 @@
-from pathlib import Path
+from dongxuan_agent.apps.prompts import read_prompt
 
 
-PROMPT = Path("liuyao_prompt.md").read_text(encoding="utf-8")
+PROMPT = read_prompt("liuyao")
 
 
 def test_liuyao_prompt_has_minimal_loop_sections():

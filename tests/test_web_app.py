@@ -50,7 +50,7 @@ def test_bazi_analyze_matches_terminal_context_builder(monkeypatch):
     assert payload["system"] == "bazi"
     assert payload["context"] == _json_roundtrip(expected_context)
     assert payload["meta"]["readonly"] is True
-    assert payload["meta"]["prompt_file"] == "bazi_prompt.md"
+    assert payload["meta"]["prompt_file"] == "prompts/bazi.md"
     assert "echo provider" in payload["analysis"]
 
 
@@ -176,7 +176,7 @@ def test_daliuren_analyze_matches_terminal_context_builder(monkeypatch):
     assert payload["system"] == "daliuren"
     assert payload["context"] == _json_roundtrip(expected_context)
     assert payload["meta"]["readonly"] is True
-    assert payload["meta"]["prompt_file"] == "daliuren_prompt.md"
+    assert payload["meta"]["prompt_file"] == "prompts/daliuren.md"
     assert "echo provider" in payload["analysis"]
 
 

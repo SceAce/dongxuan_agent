@@ -4,19 +4,13 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime
-from pathlib import Path
 
+from dongxuan_agent.apps.prompts import read_prompt
 from dongxuan_agent.chart import build_chart
 from dongxuan_agent.divination import build_divination
 from dongxuan_agent.daliuren_knowledge import build_daliuren_knowledge_context, render_daliuren_knowledge_markdown
 from dongxuan_agent.render import chart_to_json, divination_to_json, render_chart_markdown, render_divination_markdown
 from dongxuan_agent.rule_cards import build_rule_context
-
-
-PROMPT_PATHS = (
-    Path(__file__).with_name("PROMPT.md"),
-    Path(__file__).with_name("daliuren_prompt.md"),
-)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
     payload, rendered_chart = _build_payload(args, value)
 
     if args.include_prompt:
-        print(_prompt_path().read_text(encoding="utf-8").strip())
+        print(read_prompt("daliuren").strip())
         print("\n---\n")
     print(render_daliuren_knowledge_markdown().strip())
     print("\n---\n")
@@ -83,13 +77,6 @@ def _build_payload(args: argparse.Namespace, value: str) -> tuple[dict, str]:
     payload["rule_cards"] = build_rule_context(args.question)
     payload["knowledge_layers"] = build_daliuren_knowledge_context()
     return payload, render_divination_markdown(divination)
-
-
-def _prompt_path() -> Path:
-    for path in PROMPT_PATHS:
-        if path.exists():
-            return path
-    raise FileNotFoundError("未找到 PROMPT.md 或 daliuren_prompt.md")
 
 
 if __name__ == "__main__":

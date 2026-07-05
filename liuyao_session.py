@@ -3,12 +3,9 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 
+from dongxuan_agent.apps.prompts import read_prompt
 from dongxuan_agent.liuyao.context import build_liuyao_context
-
-
-PROMPT_PATH = Path(__file__).with_name("liuyao_prompt.md")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -34,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
         timezone=args.timezone,
     )
     if args.include_prompt:
-        print(PROMPT_PATH.read_text(encoding="utf-8").strip())
+        print(read_prompt("liuyao").strip())
         print("\n---\n")
     print("## 六爻工具上下文\n")
     print("将下面 JSON 作为唯一六爻排盘与分析提示依据；不要脱离字段自由发挥。\n")

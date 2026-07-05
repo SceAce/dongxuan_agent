@@ -1,7 +1,7 @@
-from pathlib import Path
+from dongxuan_agent.apps.prompts import prompt_path
 
 
-PROMPT = Path(__file__).resolve().parents[1] / "bazi_prompt.md"
+PROMPT = prompt_path("bazi")
 
 
 def test_bazi_prompt_requires_analysis_hints_and_rule_cards():

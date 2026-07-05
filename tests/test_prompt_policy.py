@@ -1,7 +1,7 @@
-from pathlib import Path
+from dongxuan_agent.apps.prompts import prompt_path
 
 
-PROMPT = Path(__file__).resolve().parents[1] / "daliuren_prompt.md"
+PROMPT = prompt_path("daliuren")
 
 
 def test_prompt_defines_issue_specific_spirit_selection():
