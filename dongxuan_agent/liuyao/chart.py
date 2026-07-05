@@ -4,7 +4,7 @@ import random
 from dataclasses import dataclass
 from datetime import datetime
 
-from ..calendar_engine import CalendarInfo, get_calendar_info
+from ..core.calendar_engine import CalendarInfo, get_calendar_info
 from .hexagrams import (
     Hexagram,
     LineState,

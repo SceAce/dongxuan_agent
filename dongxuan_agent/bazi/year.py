@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Any
 
 from .chart import BRANCH_COMBINE, BRANCH_HARM, HIDDEN_STEMS, BaziChart, ten_god
-from ..calendar_engine import year_ganzhi
-from ..constants import BRANCH_OPPOSITE, BRANCH_PUNISH
+from ..core.calendar_engine import year_ganzhi
+from ..core.constants import BRANCH_OPPOSITE, BRANCH_PUNISH
 
 
 PILLAR_BRANCH_FIELDS = {
@@ -262,6 +262,6 @@ def _conflicts(event_candidates: list[dict], activated_relations: list[dict]) ->
 def _branch_pair(left: str, right: str) -> str:
     if left == right:
         return left + right
-    from ..constants import BRANCHES
+    from ..core.constants import BRANCHES
 
     return "".join(sorted((left, right), key=BRANCHES.index))

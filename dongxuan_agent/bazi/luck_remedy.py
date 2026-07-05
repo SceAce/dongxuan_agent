@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .chart import HIDDEN_STEMS, BaziChart
-from ..constants import STEM_ELEMENTS
+from ..core.constants import STEM_ELEMENTS
 
 
 def analyze_luck_year_remedy(chart: BaziChart, remedy_analysis: dict, god_candidates: dict, year_hints: dict) -> dict:

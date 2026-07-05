@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .chart import BRANCH_COMBINE, BRANCH_HARM, HIDDEN_STEMS, BaziChart
-from ..constants import (
+from ..core.constants import (
     BRANCH_ELEMENTS,
     BRANCH_OPPOSITE,
     BRANCH_PUNISH,

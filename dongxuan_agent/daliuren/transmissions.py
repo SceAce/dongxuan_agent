@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from dongxuan_agent.constants import (
+from dongxuan_agent.core.constants import (
     BRANCH_ELEMENTS,
     BRANCH_OPPOSITE,
     BRANCH_PUNISH,

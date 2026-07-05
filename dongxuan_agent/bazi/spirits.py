@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..constants import DAY_NOBLEMAN, STEM_LODGING_BRANCH
+from ..core.constants import DAY_NOBLEMAN, STEM_LODGING_BRANCH
 
 
 WENCHANG = {

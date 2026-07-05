@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .chart import HIDDEN_STEMS, BaziChart, ten_god
-from ..constants import CONTROLLING, GENERATING, STEM_ELEMENTS
+from ..core.constants import CONTROLLING, GENERATING, STEM_ELEMENTS
 
 
 def build_integrated_analysis(

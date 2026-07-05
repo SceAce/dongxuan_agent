@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dongxuan_agent.calendar_engine import get_calendar_info, with_hour_branch, year_ganzhi
+from dongxuan_agent.core.calendar_engine import get_calendar_info, with_hour_branch, year_ganzhi
+from dongxuan_agent.core.constants import BRANCHES
+
 from .chart import DaliurenChart, build_chart_from_calendar
-from dongxuan_agent.constants import BRANCHES
 
 
 @dataclass(frozen=True)
