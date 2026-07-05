@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from dongxuan_agent.bazi.context import build_bazi_context
 from dongxuan_agent.daliuren.chart import build_chart
@@ -498,6 +499,19 @@ def test_default_auth_path_is_project_local(monkeypatch):
     assert paths[0].name == "auth.json"
     assert paths[0].parent.name == ".dongxuan"
     assert ".codex" not in str(paths[0])
+
+
+def test_default_runtime_paths_are_project_local_data_runtime(monkeypatch):
+    monkeypatch.delenv("DONGXUAN_MEMORY_PATH", raising=False)
+    monkeypatch.delenv("DONGXUAN_AUDIT_LOG_PATH", raising=False)
+
+    from dongxuan_agent.web.config import load_settings
+
+    settings = load_settings()
+    runtime_dir = Path(__file__).resolve().parents[1] / "data" / "runtime"
+
+    assert settings.memory_path == runtime_dir / "memory.json"
+    assert settings.audit_log_path == runtime_dir / "audit.jsonl"
 
 
 def test_settings_can_read_model_provider_config_toml(tmp_path, monkeypatch):

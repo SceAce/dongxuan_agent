@@ -11,6 +11,7 @@ def test_docker_compose_mounts_writable_memory_volume():
     assert "/data/dongxuan/audit.jsonl" in compose
     assert "./dongxuan-data:/data/dongxuan" in compose
     assert "read_only: true" in compose
+    assert "data/runtime" in Path("docs/docker-web.md").read_text(encoding="utf-8")
 
 
 def test_dockerfile_defaults_to_persistent_memory_path():

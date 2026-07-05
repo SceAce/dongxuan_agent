@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_RUNTIME_DIR = PROJECT_ROOT / "data" / "runtime"
 
 
 @dataclass(frozen=True)
@@ -21,14 +22,14 @@ class WebSettings:
     request_timeout_seconds: float
     max_question_length: int
     max_output_tokens: int
-    memory_path: Path = PROJECT_ROOT / ".dongxuan" / "memory.json"
-    audit_log_path: Path = PROJECT_ROOT / ".dongxuan" / "audit.jsonl"
+    memory_path: Path = DEFAULT_RUNTIME_DIR / "memory.json"
+    audit_log_path: Path = DEFAULT_RUNTIME_DIR / "audit.jsonl"
 
 
 def load_settings() -> WebSettings:
     codex_auth = _load_codex_auth()
     codex_config = _load_codex_config()
-    memory_path = Path(os.getenv("DONGXUAN_MEMORY_PATH", str(PROJECT_ROOT / ".dongxuan" / "memory.json"))).expanduser()
+    memory_path = Path(os.getenv("DONGXUAN_MEMORY_PATH", str(DEFAULT_RUNTIME_DIR / "memory.json"))).expanduser()
     return WebSettings(
         access_password=_blank_to_none(os.getenv("DONGXUAN_ACCESS_PASSWORD")),
         llm_provider=os.getenv("DONGXUAN_LLM_PROVIDER", "echo").strip().lower() or "echo",
