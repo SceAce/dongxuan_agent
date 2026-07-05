@@ -1,30 +1,41 @@
-# Dongxuan Project File Organization Design
+# 东玄项目文件整理设计
 
-## Goal
+## 目标
 
-Reorganize the repository so files are grouped by responsibility instead of by creation order. The final layout should make these boundaries obvious:
+重新整理当前仓库，让文件按职责归类，而不是按历史创建顺序堆在一起。整理完成后，仓库边界应该清晰体现：
 
-- domain code: 大六壬、八字、六爻
-- shared foundations: calendar, constants, render helpers, common metaphysics utilities
-- application entry points: chart CLIs, session/context generators, web runtime
-- external tool wrappers under `tools/`
-- prompt assets under `prompts/`
-- runtime data under `data/runtime/`, excluded from git
+- 领域代码：大六壬、八字、六爻
+- 共享基础层：历法、常量、渲染辅助、通用术数工具
+- 应用入口：排盘 CLI、上下文生成 session、Web 运行时
+- 外部工具 wrapper：统一放入 `tools/`
+- 提示词资产：统一放入 `prompts/`
+- 运行数据：统一放入 `data/runtime/`，并从 git 中排除
 
-The cleanup should be structural and behavior-preserving. Existing external calls should continue to work through compatibility wrappers while internal code moves to the new layout.
+本次整理是结构性调整，不改变业务行为。已经存在的外部调用要继续可用，但具体实现移动到新目录后，由兼容入口转调。
 
-## Current Problems
+## 文档语言约定
 
-The current project root mixes configuration, prompts, session generators, tool wrappers, runtime data, and Python package code. The largest issues are:
+从本次整理开始，新增或重写的计划书、设计文档、`README.md`、使用说明、部署说明等说明性文档，默认使用中文。
 
-- `bazi_session.py`, `daliuren_session.py`, and `liuyao_session.py` are root-level application code.
-- `bazi_prompt.md`, `daliuren_prompt.md`, and `liuyao_prompt.md` are root-level assets.
-- `tools_*_wrapper.py` files live in the root while the new `tools/` directory is empty.
-- `dongxuan_agent/` contains both domain modules and shared infrastructure in the same package level.
-- 八字 has already moved most implementation to `dongxuan_agent/bazi/`, but old `dongxuan_agent/bazi_*.py` modules remain as compatibility shims.
-- Runtime data is split between `.dongxuan/` and `dongxuan-data/`; `dongxuan-data/` is currently root-owned and should not be modified directly during cleanup.
+例外情况只有两类：
 
-## Target Layout
+- 上游工具、第三方接口或配置字段要求英文。
+- 代码标识符、命令、路径、异常名等必须保持原文。
+
+如果后续文档必须使用英文，需要在文档开头说明原因。
+
+## 当前问题
+
+当前项目根目录混放了配置、提示词、session 生成器、工具 wrapper、运行数据和 Python 包代码。主要问题如下：
+
+- `bazi_session.py`、`daliuren_session.py`、`liuyao_session.py` 是应用入口代码，却放在项目根目录。
+- `bazi_prompt.md`、`daliuren_prompt.md`、`liuyao_prompt.md` 是提示词资产，也放在项目根目录。
+- `tools_*_wrapper.py` 文件在根目录，而新建的 `tools/` 目录基本为空。
+- `dongxuan_agent/` 顶层同时包含领域模块和共享基础模块，职责边界不清楚。
+- 八字代码已经大部分进入 `dongxuan_agent/bazi/`，但 `dongxuan_agent/bazi_*.py` 仍保留在包顶层作为兼容 shim。
+- 运行数据分散在 `.dongxuan/` 和 `dongxuan-data/`；其中 `dongxuan-data/` 目前由 root 拥有，本次整理不应直接移动或修改其中已有文件。
+
+## 目标目录结构
 
 ```text
 .
@@ -84,6 +95,7 @@ The current project root mixes configuration, prompts, session generators, tool 
 │   │   ├── timing.py
 │   │   └── twelve_stages.py
 │   ├── apps/
+│   │   ├── prompts.py
 │   │   └── sessions/
 │   │       ├── bazi.py
 │   │       ├── daliuren.py
@@ -119,7 +131,7 @@ The current project root mixes configuration, prompts, session generators, tool 
 └── uv.lock
 ```
 
-Root-level compatibility files will remain during this cleanup:
+项目根目录保留以下兼容入口，但文件内容只能是薄包装：
 
 - `bazi_session.py`
 - `daliuren_session.py`
@@ -131,107 +143,125 @@ Root-level compatibility files will remain during this cleanup:
 - `tools_liuyao_chart_wrapper.py`
 - `tools_liuyao_session_wrapper.py`
 
-Each root compatibility file should only import and call the relocated implementation.
+这些兼容文件只负责导入并调用新位置的实现，不再承载业务逻辑。
 
-## Module Migration
+## 模块迁移设计
 
-### Shared Core
+### 共享基础层
 
-Move shared foundations to `dongxuan_agent/core/`:
+把通用基础模块迁到 `dongxuan_agent/core/`：
 
 - `calendar_engine.py`
 - `constants.py`
 - `season.py`
 - `xun.py`
 
-`render.py` should be split carefully. 大六壬-specific render functions should move to `dongxuan_agent/daliuren/render.py`; only genuinely shared rendering helpers should remain in `core`.
+`render.py` 需要谨慎拆分。大六壬专用渲染函数迁到 `dongxuan_agent/daliuren/render.py`；只有真正跨领域复用的渲染辅助函数才留在 `core`。
 
 ### 大六壬
 
-Move 大六壬 domain modules from package root to `dongxuan_agent/daliuren/`:
+把当前包顶层的大六壬领域模块迁到 `dongxuan_agent/daliuren/`：
 
 - `chart.py`
 - `cli.py`
 - `divination.py`
-- `daliuren_knowledge.py` to `knowledge.py`
+- `daliuren_knowledge.py` 改名为 `knowledge.py`
 - `rule_cards.py`
 - `spirits.py`
 - `transmissions.py`
 
-The existing public script `daliuren-chart = "dongxuan_agent.cli:main"` should be updated to `dongxuan_agent.daliuren.cli:main`. The old `dongxuan_agent/cli.py` should remain as a compatibility wrapper during this cleanup.
+`pyproject.toml` 中已有的公开命令：
+
+```toml
+daliuren-chart = "dongxuan_agent.cli:main"
+```
+
+应改为：
+
+```toml
+daliuren-chart = "dongxuan_agent.daliuren.cli:main"
+```
+
+旧文件 `dongxuan_agent/cli.py` 保留为兼容 wrapper。
 
 ### 八字
 
-Keep the existing `dongxuan_agent/bazi/` package as the canonical 八字 domain. Move or rename:
+现有 `dongxuan_agent/bazi/` 继续作为八字领域代码的 canonical 位置。需要迁移：
 
-- `dongxuan_agent/bazi_cli.py` to `dongxuan_agent/bazi/cli.py`
-- `dongxuan_agent/bazi_knowledge.py` to `dongxuan_agent/bazi/knowledge.py`
+- `dongxuan_agent/bazi_cli.py` 迁到 `dongxuan_agent/bazi/cli.py`
+- `dongxuan_agent/bazi_knowledge.py` 迁到 `dongxuan_agent/bazi/knowledge.py`
 
-The current `dongxuan_agent/bazi_*.py` files should stay as compatibility shims that re-export from `dongxuan_agent.bazi.*`. They are small and protect current tests and external imports.
+当前 `dongxuan_agent/bazi_*.py` 文件继续作为兼容 shim，统一从 `dongxuan_agent.bazi.*` re-export。它们很小，保留可以保护当前测试和外部导入路径。
 
 ### 六爻
 
-Keep the existing `dongxuan_agent/liuyao/` package as the canonical 六爻 domain. Move:
+现有 `dongxuan_agent/liuyao/` 继续作为六爻领域代码的 canonical 位置。需要迁移：
 
-- `dongxuan_agent/liuyao_cli.py` to `dongxuan_agent/liuyao/cli.py`
+- `dongxuan_agent/liuyao_cli.py` 迁到 `dongxuan_agent/liuyao/cli.py`
 
-The old `dongxuan_agent/liuyao_cli.py` should remain as a compatibility wrapper during this cleanup.
+旧文件 `dongxuan_agent/liuyao_cli.py` 保留为兼容 wrapper。
 
-### Sessions
+### Session 上下文生成器
 
-Move session/context generators to `dongxuan_agent/apps/sessions/`:
+把 session/context 生成器迁到 `dongxuan_agent/apps/sessions/`：
 
-- `bazi_session.py` to `dongxuan_agent/apps/sessions/bazi.py`
-- `daliuren_session.py` to `dongxuan_agent/apps/sessions/daliuren.py`
-- `liuyao_session.py` to `dongxuan_agent/apps/sessions/liuyao.py`
+- `bazi_session.py` 迁到 `dongxuan_agent/apps/sessions/bazi.py`
+- `daliuren_session.py` 迁到 `dongxuan_agent/apps/sessions/daliuren.py`
+- `liuyao_session.py` 迁到 `dongxuan_agent/apps/sessions/liuyao.py`
 
-The root files should remain as wrappers that call the new modules. This preserves current tests and external usage while removing implementation logic from the root.
+项目根目录的同名文件保留为 wrapper。这样可以保持当前测试和外部调用不变，同时把实现逻辑从根目录移走。
 
-### Prompts
+### 提示词
 
-Move prompt assets to `prompts/`:
+把提示词资产迁到 `prompts/`：
 
-- `bazi_prompt.md` to `prompts/bazi.md`
-- `daliuren_prompt.md` to `prompts/daliuren.md`
-- `liuyao_prompt.md` to `prompts/liuyao.md`
+- `bazi_prompt.md` 迁到 `prompts/bazi.md`
+- `daliuren_prompt.md` 迁到 `prompts/daliuren.md`
+- `liuyao_prompt.md` 迁到 `prompts/liuyao.md`
 
-Session modules and web services should resolve prompt files through `dongxuan_agent/apps/prompts.py`, so future prompt moves do not require updates in multiple places.
+session 模块和 Web 服务通过 `dongxuan_agent/apps/prompts.py` 统一解析提示词路径，避免以后调整路径时多处修改。
 
-Root prompt files should not remain after this cleanup. Prompt policy tests and application code should read the canonical `prompts/*.md` files through the shared prompt resolver.
+本次整理后，根目录不再保留 prompt 文件副本。提示词策略测试和应用代码都应读取 canonical 的 `prompts/*.md`。
 
 ### Tools
 
-Move tool wrapper implementations into `tools/<domain>/`:
+把工具 wrapper 实现迁到 `tools/<domain>/`：
 
-- `tools_bazi_chart_wrapper.py` to `tools/bazi/chart_wrapper.py`
-- `tools_bazi_session_wrapper.py` to `tools/bazi/session_wrapper.py`
-- `tools_daliuren_chart_wrapper.py` to `tools/daliuren/chart_wrapper.py`
-- `tools_daliuren_session_wrapper.py` to `tools/daliuren/session_wrapper.py`
-- `tools_liuyao_chart_wrapper.py` to `tools/liuyao/chart_wrapper.py`
-- `tools_liuyao_session_wrapper.py` to `tools/liuyao/session_wrapper.py`
+- `tools_bazi_chart_wrapper.py` 迁到 `tools/bazi/chart_wrapper.py`
+- `tools_bazi_session_wrapper.py` 迁到 `tools/bazi/session_wrapper.py`
+- `tools_daliuren_chart_wrapper.py` 迁到 `tools/daliuren/chart_wrapper.py`
+- `tools_daliuren_session_wrapper.py` 迁到 `tools/daliuren/session_wrapper.py`
+- `tools_liuyao_chart_wrapper.py` 迁到 `tools/liuyao/chart_wrapper.py`
+- `tools_liuyao_session_wrapper.py` 迁到 `tools/liuyao/session_wrapper.py`
 
-Root wrapper files should remain as compatibility wrappers. The wrapper code should stop referring to a non-existent `daliuren_agent` directory and should import from this repository package directly.
+项目根目录的 wrapper 文件保留为兼容入口。新 wrapper 实现不应继续引用不存在的 `daliuren_agent` 目录，而应直接从当前仓库的 Python 包导入。
 
-### Runtime Data
+### 运行数据
 
-Adopt `data/runtime/` as the default local runtime location:
+本地运行数据默认使用 `data/runtime/`：
 
 - `data/runtime/memory.json`
 - `data/runtime/audit.jsonl`
 - `data/runtime/auth.json`
 - `data/runtime/config.toml`
 
-Keep Docker volume compatibility for `./dongxuan-data:/data/dongxuan` unless the user explicitly chooses to migrate Docker data. The cleanup should update documentation to explain:
+Docker 运行继续兼容当前挂载：
 
-- local app defaults use `data/runtime/`
-- Docker defaults still mount `dongxuan-data/`
-- `.dongxuan/` and `dongxuan-data/` are legacy runtime locations
+```text
+./dongxuan-data:/data/dongxuan
+```
 
-Do not move or edit existing root-owned `dongxuan-data/` files during the cleanup. Treat them as existing runtime state.
+除非后续明确决定迁移 Docker 数据，否则本次整理不改变 Docker 数据挂载。文档需要说明：
 
-## Compatibility Strategy
+- 本地默认运行数据位置为 `data/runtime/`
+- Docker 默认仍使用 `dongxuan-data/`
+- `.dongxuan/` 和 `dongxuan-data/` 是历史运行数据位置
 
-Compatibility wrappers should be short and explicit:
+不要移动或编辑已有 root-owned 的 `dongxuan-data/` 文件。本次整理只调整默认路径和文档，不碰已有运行状态。
+
+## 兼容策略
+
+兼容 wrapper 必须短小明确，例如：
 
 ```python
 from __future__ import annotations
@@ -242,7 +272,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-Old import modules should continue to work:
+以下旧导入路径需要继续可用：
 
 - `dongxuan_agent.cli`
 - `dongxuan_agent.bazi_cli`
@@ -258,59 +288,61 @@ Old import modules should continue to work:
 - `dongxuan_agent.bazi_rule_cards`
 - `dongxuan_agent.bazi_strength`
 
-The implementation should update internal imports to canonical paths while tests keep a small set of compatibility checks.
+内部代码应尽量改为 canonical 路径；测试中保留少量兼容路径检查，确保外部旧调用不会断。
 
-## Web and Docker Impact
+## Web 与 Docker 影响
 
-`dongxuan_agent/web/services.py` should load prompt files from the new prompt resolver. API metadata should report canonical prompt paths such as `prompts/bazi.md` and `prompts/daliuren.md`, and tests should be updated to assert those paths.
+`dongxuan_agent/web/services.py` 应通过新的 prompt resolver 加载提示词。API metadata 应报告 canonical 路径，例如 `prompts/bazi.md` 和 `prompts/daliuren.md`；对应测试也要同步更新。
 
-`dongxuan_agent/web/config.py` should use `data/runtime/` as the local default runtime directory. Docker environment variables already override memory and audit paths, so container behavior can remain unchanged.
+`dongxuan_agent/web/config.py` 的本地默认运行目录应改为 `data/runtime/`。Docker 环境变量已经覆盖 memory 和 audit 路径，因此容器行为可以保持不变。
 
-`Dockerfile` and `.dockerignore` should be checked after moves. Because root compatibility files remain, the Docker build can continue copying the full project. No packaging change is required unless tests show import failures.
+移动文件后需要检查 `Dockerfile` 和 `.dockerignore`。由于根目录兼容入口仍保留，Docker build 可以继续复制完整项目。除非测试显示 import 失败，否则不需要改变打包方式。
 
-## Testing Strategy
+## 测试策略
 
-The cleanup should be verified in layers:
+本次整理按层验证：
 
-1. Run focused tests for moved entry points:
+1. 先跑入口相关测试：
    - `tests/test_cli.py`
    - `tests/test_bazi_cli.py`
    - `tests/test_liuyao_cli.py`
    - `tests/test_session.py`
    - `tests/test_bazi_session.py`
    - `tests/test_liuyao_session.py`
-2. Run prompt policy tests after moving prompt files:
+2. 移动提示词后跑 prompt policy 测试：
    - `tests/test_prompt_policy.py`
    - `tests/test_bazi_prompt_policy.py`
    - `tests/test_liuyao_prompt_policy.py`
-3. Run web and Docker config tests:
+3. 跑 Web 和 Docker 配置测试：
    - `tests/test_web_app.py`
    - `tests/test_web_auth_audit.py`
    - `tests/test_web_memory.py`
    - `tests/test_docker_config.py`
-4. Run the full test suite with `uv run pytest`.
+4. 最后跑完整测试：
+   - `uv run pytest`
 
-If `uv run pytest` needs dependency downloads and fails due network restrictions, rerun with approved network escalation or use the available local environment if dependencies are already installed.
+如果 `uv run pytest` 因依赖下载或网络限制失败，需要按环境权限重新执行，或使用当前已有本地环境完成验证。
 
-## Implementation Order
+## 实施顺序
 
-1. Create target package directories and shared prompt resolver.
-2. Move prompt assets and update tests to canonical paths.
-3. Move session implementations and replace root files with wrappers.
-4. Move tool wrapper implementations under `tools/<domain>/` and replace root files with wrappers.
-5. Move 八字 CLI and knowledge modules into `dongxuan_agent/bazi/`, retaining old import wrappers.
-6. Move 六爻 CLI into `dongxuan_agent/liuyao/`, retaining old import wrapper.
-7. Move 大六壬 domain modules into `dongxuan_agent/daliuren/`, retaining old import wrappers.
-8. Move shared modules into `dongxuan_agent/core/`, updating imports and retaining compatibility wrappers only where tests or public entry points require them.
-9. Update runtime data defaults and `.gitignore` for `data/runtime/`.
-10. Run focused tests, then the full suite.
+1. 创建目标目录和统一 prompt resolver。
+2. 移动提示词资产，并把测试改为读取 canonical 路径。
+3. 移动 session 实现，把根目录 session 文件替换为 wrapper。
+4. 移动 tool wrapper 实现到 `tools/<domain>/`，把根目录 wrapper 替换为 wrapper。
+5. 移动八字 CLI 和 knowledge 模块到 `dongxuan_agent/bazi/`，保留旧导入 wrapper。
+6. 移动六爻 CLI 到 `dongxuan_agent/liuyao/`，保留旧导入 wrapper。
+7. 移动大六壬领域模块到 `dongxuan_agent/daliuren/`，保留旧导入 wrapper。
+8. 移动共享模块到 `dongxuan_agent/core/`，更新内部 import，并只在公开入口需要时保留兼容 wrapper。
+9. 更新本地运行数据默认路径和 `.gitignore`。
+10. 先跑聚焦测试，再跑完整测试。
 
-This order keeps each step small enough to diagnose import failures quickly.
+这个顺序可以让每一步的 import 问题更容易定位。
 
-## Out of Scope
+## 不在本次范围内
 
-- Rewriting domain algorithms.
-- Changing CLI behavior or output format.
-- Deleting compatibility wrappers in the same cleanup.
-- Migrating existing root-owned Docker runtime files.
-- Reformatting old design or plan documents that reference historical paths.
+- 重写领域算法。
+- 改变 CLI 行为或输出格式。
+- 在同一次整理中删除兼容 wrapper。
+- 迁移已有 root-owned Docker 运行数据。
+- 重写旧设计文档或旧计划文档中记录的历史路径。
+
