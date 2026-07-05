@@ -1,4 +1,5 @@
 import importlib
+from pathlib import Path
 import subprocess
 import sys
 
@@ -26,3 +27,11 @@ def test_root_chart_wrappers_import_after_cli_package_move():
     assert importlib.import_module("tools_bazi_chart_wrapper").main
     assert importlib.import_module("tools_liuyao_chart_wrapper").main
     assert importlib.import_module("tools_daliuren_chart_wrapper").main
+
+
+def test_daliuren_root_wrapper_does_not_inject_legacy_tool_path():
+    source = Path("tools_daliuren_chart_wrapper.py").read_text()
+
+    assert "daliuren_agent" not in source
+    assert "sys.path" not in source
+    assert "from pathlib import Path" not in source
