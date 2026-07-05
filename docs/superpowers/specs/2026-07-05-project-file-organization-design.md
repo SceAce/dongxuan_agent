@@ -32,7 +32,7 @@
 - `bazi_prompt.md`、`daliuren_prompt.md`、`liuyao_prompt.md` 是提示词资产，也放在项目根目录。
 - `tools_*_wrapper.py` 文件在根目录，而新建的 `tools/` 目录基本为空。
 - `dongxuan_agent/` 顶层同时包含领域模块和共享基础模块，职责边界不清楚。
-- 八字代码已经大部分进入 `dongxuan_agent/bazi/`，但 `dongxuan_agent/bazi_*.py` 仍保留在包顶层作为兼容 shim。
+- 八字代码已经大部分进入 `dongxuan_agent/bazi/`，但 `dongxuan_agent/bazi_*.py` 仍保留在包顶层作为兼容 shim，导致包顶层被旧路径污染。
 - 运行数据分散在 `.dongxuan/` 和 `dongxuan-data/`；其中 `dongxuan-data/` 目前由 root 拥有，本次整理不应直接移动或修改其中已有文件。
 
 ## 目标目录结构
@@ -100,10 +100,6 @@
 │   │       ├── bazi.py
 │   │       ├── daliuren.py
 │   │       └── liuyao.py
-│   ├── compat/
-│   │   ├── bazi.py
-│   │   ├── daliuren.py
-│   │   └── liuyao.py
 │   └── web/
 ├── tools/
 │   ├── bazi/
@@ -145,6 +141,8 @@
 
 这些兼容文件只负责导入并调用新位置的实现，不再承载业务逻辑。
 
+`dongxuan_agent/` 包顶层不保留旧领域入口。`dongxuan_agent.cli`、`dongxuan_agent.bazi_cli`、`dongxuan_agent.liuyao_cli` 和 `dongxuan_agent.bazi_*` 旧模块应被迁移或删除，项目内部测试和工具 wrapper 统一改用 canonical 路径。
+
 ## 模块迁移设计
 
 ### 共享基础层
@@ -182,7 +180,7 @@ daliuren-chart = "dongxuan_agent.cli:main"
 daliuren-chart = "dongxuan_agent.daliuren.cli:main"
 ```
 
-旧文件 `dongxuan_agent/cli.py` 保留为兼容 wrapper。
+旧文件 `dongxuan_agent/cli.py` 不保留。测试、工具 wrapper 和文档中的调用统一改为 `dongxuan_agent.daliuren.cli`。
 
 ### 八字
 
@@ -191,7 +189,20 @@ daliuren-chart = "dongxuan_agent.daliuren.cli:main"
 - `dongxuan_agent/bazi_cli.py` 迁到 `dongxuan_agent/bazi/cli.py`
 - `dongxuan_agent/bazi_knowledge.py` 迁到 `dongxuan_agent/bazi/knowledge.py`
 
-当前 `dongxuan_agent/bazi_*.py` 文件继续作为兼容 shim，统一从 `dongxuan_agent.bazi.*` re-export。它们很小，保留可以保护当前测试和外部导入路径。
+旧文件 `dongxuan_agent/bazi_cli.py` 不保留。`pyproject.toml`、测试和工具 wrapper 统一改为 `dongxuan_agent.bazi.cli`。
+
+当前 `dongxuan_agent/bazi_*.py` 文件不继续保留。这些文件基本只是 3 行 re-export shim，应删除并把测试、内部 import、工具 wrapper 改为 canonical 路径：
+
+- `dongxuan_agent.bazi_analysis` 改为 `dongxuan_agent.bazi.year`
+- `dongxuan_agent.bazi_climate` 改为 `dongxuan_agent.bazi.climate`
+- `dongxuan_agent.bazi_god` 改为 `dongxuan_agent.bazi.gods`
+- `dongxuan_agent.bazi_imagery` 改为 `dongxuan_agent.bazi.imagery`
+- `dongxuan_agent.bazi_integration` 改为 `dongxuan_agent.bazi.integration`
+- `dongxuan_agent.bazi_luck_remedy` 改为 `dongxuan_agent.bazi.luck_remedy`
+- `dongxuan_agent.bazi_pattern` 改为 `dongxuan_agent.bazi.pattern`
+- `dongxuan_agent.bazi_remedy` 改为 `dongxuan_agent.bazi.remedy`
+- `dongxuan_agent.bazi_rule_cards` 改为 `dongxuan_agent.bazi.rule_cards`
+- `dongxuan_agent.bazi_strength` 改为 `dongxuan_agent.bazi.strength`
 
 ### 六爻
 
@@ -199,7 +210,7 @@ daliuren-chart = "dongxuan_agent.daliuren.cli:main"
 
 - `dongxuan_agent/liuyao_cli.py` 迁到 `dongxuan_agent/liuyao/cli.py`
 
-旧文件 `dongxuan_agent/liuyao_cli.py` 保留为兼容 wrapper。
+旧文件 `dongxuan_agent/liuyao_cli.py` 不保留。测试、工具 wrapper 和文档中的调用统一改为 `dongxuan_agent.liuyao.cli`。
 
 ### Session 上下文生成器
 
@@ -272,23 +283,14 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-以下旧导入路径需要继续可用：
+兼容范围只限项目根目录的外部入口 wrapper：
 
-- `dongxuan_agent.cli`
-- `dongxuan_agent.bazi_cli`
-- `dongxuan_agent.liuyao_cli`
-- `dongxuan_agent.bazi_analysis`
-- `dongxuan_agent.bazi_climate`
-- `dongxuan_agent.bazi_god`
-- `dongxuan_agent.bazi_imagery`
-- `dongxuan_agent.bazi_integration`
-- `dongxuan_agent.bazi_luck_remedy`
-- `dongxuan_agent.bazi_pattern`
-- `dongxuan_agent.bazi_remedy`
-- `dongxuan_agent.bazi_rule_cards`
-- `dongxuan_agent.bazi_strength`
+- `bazi_session.py`
+- `daliuren_session.py`
+- `liuyao_session.py`
+- `tools_*_wrapper.py`
 
-内部代码应尽量改为 canonical 路径；测试中保留少量兼容路径检查，确保外部旧调用不会断。
+`dongxuan_agent/` 包内旧领域路径不再兼容。内部代码、测试、工具 wrapper、`pyproject.toml` 都应改为 canonical 路径；整理完成后用 `rg` 检查旧路径引用已经清空。
 
 ## Web 与 Docker 影响
 
@@ -320,6 +322,20 @@ if __name__ == "__main__":
    - `tests/test_docker_config.py`
 4. 最后跑完整测试：
    - `uv run pytest`
+5. 用 `rg` 检查包内旧路径引用已经清空：
+   - `dongxuan_agent.cli`
+   - `dongxuan_agent.bazi_cli`
+   - `dongxuan_agent.liuyao_cli`
+   - `dongxuan_agent.bazi_analysis`
+   - `dongxuan_agent.bazi_climate`
+   - `dongxuan_agent.bazi_god`
+   - `dongxuan_agent.bazi_imagery`
+   - `dongxuan_agent.bazi_integration`
+   - `dongxuan_agent.bazi_luck_remedy`
+   - `dongxuan_agent.bazi_pattern`
+   - `dongxuan_agent.bazi_remedy`
+   - `dongxuan_agent.bazi_rule_cards`
+   - `dongxuan_agent.bazi_strength`
 
 如果 `uv run pytest` 因依赖下载或网络限制失败，需要按环境权限重新执行，或使用当前已有本地环境完成验证。
 
@@ -329,10 +345,10 @@ if __name__ == "__main__":
 2. 移动提示词资产，并把测试改为读取 canonical 路径。
 3. 移动 session 实现，把根目录 session 文件替换为 wrapper。
 4. 移动 tool wrapper 实现到 `tools/<domain>/`，把根目录 wrapper 替换为 wrapper。
-5. 移动八字 CLI 和 knowledge 模块到 `dongxuan_agent/bazi/`，保留旧导入 wrapper。
-6. 移动六爻 CLI 到 `dongxuan_agent/liuyao/`，保留旧导入 wrapper。
-7. 移动大六壬领域模块到 `dongxuan_agent/daliuren/`，保留旧导入 wrapper。
-8. 移动共享模块到 `dongxuan_agent/core/`，更新内部 import，并只在公开入口需要时保留兼容 wrapper。
+5. 移动八字 CLI 和 knowledge 模块到 `dongxuan_agent/bazi/`，删除包顶层旧八字 shim，并更新所有引用。
+6. 移动六爻 CLI 到 `dongxuan_agent/liuyao/`，删除包顶层旧六爻 CLI，并更新所有引用。
+7. 移动大六壬领域模块到 `dongxuan_agent/daliuren/`，删除包顶层旧大六壬入口，并更新所有引用。
+8. 移动共享模块到 `dongxuan_agent/core/`，更新内部 import；只保留项目根目录的外部入口 wrapper。
 9. 更新本地运行数据默认路径和 `.gitignore`。
 10. 先跑聚焦测试，再跑完整测试。
 
@@ -342,7 +358,6 @@ if __name__ == "__main__":
 
 - 重写领域算法。
 - 改变 CLI 行为或输出格式。
-- 在同一次整理中删除兼容 wrapper。
+- 删除项目根目录的外部入口兼容 wrapper。
 - 迁移已有 root-owned Docker 运行数据。
 - 重写旧设计文档或旧计划文档中记录的历史路径。
-
