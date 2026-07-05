@@ -1,4 +1,4 @@
-from dongxuan_agent.rule_cards import build_rule_context, classify_question
+from dongxuan_agent.daliuren.rule_cards import build_rule_context, classify_question
 
 
 def test_classify_question_by_common_issue_keywords():

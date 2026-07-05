@@ -1,6 +1,6 @@
 import json
 
-from dongxuan_agent.cli import main
+from dongxuan_agent.daliuren.cli import main
 
 
 def test_cli_outputs_markdown(capsys):

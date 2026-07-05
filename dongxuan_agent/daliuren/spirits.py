@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .calendar_engine import CalendarInfo
-from .constants import (
+from dongxuan_agent.calendar_engine import CalendarInfo
+from dongxuan_agent.constants import (
     BRANCHES,
     BRANCH_ELEMENTS,
     BRANCH_OPPOSITE,
@@ -11,7 +11,7 @@ from .constants import (
     STEM_LODGING_BRANCH,
     STEM_YINYANG,
 )
-from .season import season_state
+from dongxuan_agent.season import season_state
 from .transmissions import Transmissions
 
 

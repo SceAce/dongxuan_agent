@@ -1,5 +1,5 @@
-from dongxuan_agent.chart import build_chart
-from dongxuan_agent.divination import (
+from dongxuan_agent.daliuren.chart import build_chart
+from dongxuan_agent.daliuren.divination import (
     build_divination,
     calculate_querent,
     number_to_hour_branch,

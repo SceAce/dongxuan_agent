@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .calendar_engine import CalendarInfo, get_calendar_info
-from .constants import (
+from dongxuan_agent.calendar_engine import CalendarInfo, get_calendar_info
+from dongxuan_agent.constants import (
     BRANCH_ELEMENTS,
     BRANCHES,
     CONTROLLING,
@@ -16,8 +16,8 @@ from .constants import (
 )
 from .spirits import build_spirit_sha
 from .transmissions import Transmissions, build_transmissions
-from .xun import build_xun_dun
-from .season import season_state
+from dongxuan_agent.xun import build_xun_dun
+from dongxuan_agent.season import season_state
 
 
 @dataclass(frozen=True)

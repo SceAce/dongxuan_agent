@@ -5,7 +5,7 @@ from typing import Any
 
 from .chart import BRANCH_COMBINE, BRANCH_HARM, HIDDEN_STEMS, BaziChart, ten_god
 from ..constants import BRANCH_OPPOSITE, BRANCH_PUNISH
-from ..divination import year_ganzhi
+from ..daliuren.divination import year_ganzhi
 
 
 PILLAR_BRANCH_FIELDS = {

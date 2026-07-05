@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-daliuren-chart = "dongxuan_agent.cli:main"
+daliuren-chart = "dongxuan_agent.daliuren.cli:main"
 bazi-chart = "dongxuan_agent.bazi.cli:main"
 liuyao-chart = "dongxuan_agent.liuyao.cli:main"
 

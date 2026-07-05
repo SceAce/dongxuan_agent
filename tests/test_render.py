@@ -1,6 +1,6 @@
-from dongxuan_agent.chart import build_chart
-from dongxuan_agent.divination import build_divination
-from dongxuan_agent.render import (
+from dongxuan_agent.daliuren.chart import build_chart
+from dongxuan_agent.daliuren.divination import build_divination
+from dongxuan_agent.daliuren.render import (
     chart_to_json,
     divination_to_json,
     render_chart_markdown,

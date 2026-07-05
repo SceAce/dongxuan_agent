@@ -11,7 +11,7 @@ if SITE_PACKAGES.exists():
     sys.path.insert(0, str(SITE_PACKAGES))
 sys.path.insert(0, str(TOOL_ROOT))
 
-from dongxuan_agent.cli import main  # noqa: E402
+from dongxuan_agent.daliuren.cli import main  # noqa: E402
 
 
 if __name__ == "__main__":

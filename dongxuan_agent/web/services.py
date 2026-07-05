@@ -4,11 +4,11 @@ from typing import Literal
 
 from dongxuan_agent.apps.prompts import prompt_label, read_prompt
 from dongxuan_agent.bazi.context import build_bazi_context
-from dongxuan_agent.chart import build_chart
-from dongxuan_agent.divination import build_divination
-from dongxuan_agent.daliuren_knowledge import build_daliuren_knowledge_context
-from dongxuan_agent.render import chart_to_json, divination_to_json
-from dongxuan_agent.rule_cards import build_rule_context
+from dongxuan_agent.daliuren.chart import build_chart
+from dongxuan_agent.daliuren.divination import build_divination
+from dongxuan_agent.daliuren.knowledge import build_daliuren_knowledge_context
+from dongxuan_agent.daliuren.render import chart_to_json, divination_to_json
+from dongxuan_agent.daliuren.rule_cards import build_rule_context
 
 from .llm import LLMAdapter
 
