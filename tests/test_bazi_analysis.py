@@ -1,5 +1,20 @@
+import subprocess
+import sys
+
 from dongxuan_agent.bazi import build_bazi_chart
 from dongxuan_agent.bazi.year import build_year_analysis_hints
+
+
+def test_bazi_year_does_not_import_daliuren_domain():
+    script = (
+        "import sys; "
+        "import dongxuan_agent.bazi.year; "
+        "print('dongxuan_agent.daliuren.divination' in sys.modules)"
+    )
+
+    result = subprocess.run([sys.executable, "-c", script], check=True, capture_output=True, text=True)
+
+    assert result.stdout.strip() == "False"
 
 
 def test_year_analysis_hints_for_2006_birth_target_2025():

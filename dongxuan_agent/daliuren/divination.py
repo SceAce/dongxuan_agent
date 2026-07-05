@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dongxuan_agent.calendar_engine import get_calendar_info, with_hour_branch
+from dongxuan_agent.calendar_engine import get_calendar_info, with_hour_branch, year_ganzhi
 from .chart import DaliurenChart, build_chart_from_calendar
-from dongxuan_agent.constants import BRANCHES, JIAZI
+from dongxuan_agent.constants import BRANCHES
 
 
 @dataclass(frozen=True)
@@ -94,10 +94,6 @@ def calculate_querent(
     if gender is not None:
         result["traveling_year"] = traveling_year(gender, virtual_age)
     return result
-
-
-def year_ganzhi(year: int) -> str:
-    return JIAZI[(year - 1984) % 60]
 
 
 def traveling_year(gender: str, virtual_age: int) -> str:

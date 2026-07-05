@@ -89,6 +89,10 @@ def xunkong_for_day(day_gz: str) -> tuple[str, str]:
     return empty[0], empty[1]
 
 
+def year_ganzhi(year: int) -> str:
+    return JIAZI[(year - 1984) % 60]
+
+
 def month_general(value: str | datetime, timezone: str = "Asia/Shanghai") -> str:
     dt = parse_datetime(value, timezone)
     latest = None

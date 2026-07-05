@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Any
 
 from .chart import BRANCH_COMBINE, BRANCH_HARM, HIDDEN_STEMS, BaziChart, ten_god
+from ..calendar_engine import year_ganzhi
 from ..constants import BRANCH_OPPOSITE, BRANCH_PUNISH
-from ..daliuren.divination import year_ganzhi
 
 
 PILLAR_BRANCH_FIELDS = {
