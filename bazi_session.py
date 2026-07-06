@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from dongxuan_agent.bazi.context import build_bazi_context
+from dongxuan_agent.bazi_knowledge import build_bazi_knowledge_context
 
 
 PROMPT_PATHS = (
@@ -41,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.include_prompt:
         print(_prompt_path().read_text(encoding="utf-8").strip())
         print("\n---\n")
+    print(_knowledge_summary().strip())
+    print("\n---\n")
     print("## 八字工具上下文\n")
     print("将下面 JSON 作为唯一八字排盘与分析提示依据；不要脱离字段自由发挥。\n")
     print("```json")
@@ -54,6 +57,22 @@ def _prompt_path() -> Path:
         if path.exists():
             return path
     raise FileNotFoundError("未找到 BAZI_PROMPT.md 或 bazi_prompt.md")
+
+
+def _knowledge_summary() -> str:
+    knowledge = build_bazi_knowledge_context()
+    lines = [
+        "### 八字知识分层",
+        "",
+        f"- 层级顺序：{' -> '.join(knowledge['layer_priority'])}",
+        f"- 案例偏好：{knowledge['case_policy']['prefer']}",
+        "",
+        "#### 默认书单",
+        "- 理法：" + "；".join(knowledge["book_sets"]["principle"]),
+        "- 象法：" + "；".join(knowledge["book_sets"]["symbolic"]),
+        "- 案例：" + "；".join(knowledge["book_sets"]["cases"]),
+    ]
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

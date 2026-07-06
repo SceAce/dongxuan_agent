@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from .chart import DaliurenChart
 from .divination import DaliurenDivination
 
@@ -14,12 +16,13 @@ def divination_to_json(divination: DaliurenDivination) -> dict:
 
 def render_chart_markdown(chart: DaliurenChart) -> str:
     cal = chart.calendar
+    plate_preview = json.dumps(chart.to_dict()["plate_preview"], ensure_ascii=False, indent=2)
     plate_rows = "\n".join(
         f"| {earth} | {heaven} | {chart.heavenly_generals.get(earth, '')} | {chart.heavenly_officers.get(earth, {}).get('name', '')} | {chart.six_relatives.get(earth, {}).get('relative', '')} |"
         for earth, heaven in chart.heaven_plate.items()
     )
     lesson_rows = "\n".join(
-        f"| {lesson.name} | {lesson.lower} | {lesson.upper} | {lesson.relation} |"
+        f"| {lesson.name} | {lesson.lower} | {lesson.lower_branch} | {lesson.upper} | {lesson.relation} | {chart.heavenly_generals.get(lesson.lower_branch, '')} | {chart.heavenly_officers.get(lesson.lower_branch, {}).get('name', '')} | {chart.six_relatives.get(lesson.lower_branch, {}).get('relative', '')} |"
         for lesson in chart.four_lessons
     )
     trans_names = ["初传", "中传", "末传"]
@@ -33,6 +36,12 @@ def render_chart_markdown(chart: DaliurenChart) -> str:
     ) or "| 无 | 无 | 无 | 无 |"
     uncertainty = "\n".join(f"- {item}" for item in chart.uncertainty)
     return f"""## 大六壬课盘
+
+### 盘面结构
+
+```json
+{plate_preview}
+```
 
 ### 基本信息
 
@@ -51,8 +60,8 @@ def render_chart_markdown(chart: DaliurenChart) -> str:
 
 ### 四课
 
-| 课 | 下 | 上 | 关系 |
-|---|---|---|---|
+| 课 | 下 | 下地盘 | 上 | 关系 | 天将 | 天官 | 六亲 |
+|---|---|---|---|---|---|---|---|
 {lesson_rows}
 
 ### 三传

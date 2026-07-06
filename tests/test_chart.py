@@ -15,6 +15,11 @@ def test_build_chart_contains_core_sections():
     assert len(chart.four_lessons) == 4
     assert len(chart.heavenly_generals) == 12
     assert chart.xunkong == chart.calendar.xunkong
+    payload = chart.to_dict()
+    assert payload["plate_preview"]["format"] == "天地盘 / 四课 / 三传"
+    assert len(payload["plate_preview"]["earth_plate"]) == 12
+    assert len(payload["plate_preview"]["four_lessons"]) == 4
+    assert len(payload["plate_preview"]["three_transmissions"]) == 3
 
 
 def test_four_lessons_are_named_and_have_upper_lower():
@@ -274,43 +279,47 @@ def test_divination_extra_positions_can_activate_xunding_dingma():
 
 
 def test_live_hour_keeps_date_and_month_general_but_replaces_hour_branch():
-    normal = build_chart("2026-05-26 10:14:15", timezone="Asia/Shanghai")
+    normal = build_chart("2026-05-26 00:14:15", timezone="Asia/Shanghai")
     live = build_divination(
-        "2026-05-26 10:14:15",
+        "2026-05-26 00:14:15",
         timezone="Asia/Shanghai",
         mode="live-hour",
-        hour_branch="子",
-        gender="男",
+        hour_branch="巳时",
+        gender=None,
         question="测试活时",
     )
 
     assert live.chart.calendar.day_gz == normal.calendar.day_gz
     assert live.chart.month_general == normal.month_general
-    assert live.chart.calendar.hour_branch == "子"
-    assert live.chart.calendar.hour_gz == "丙子"
+    assert live.chart.calendar.hour_branch == "巳"
+    assert live.chart.calendar.hour_gz != normal.calendar.hour_gz
     assert live.divination["mode"] == "live-hour"
-    assert live.divination["source_hour_branch"] == "子"
+    assert live.divination["source_hour_branch"] == "巳"
 
 
 def test_number_divination_maps_reported_number_to_hour_branch():
-    assert number_to_hour_branch(1) == "子"
-    assert number_to_hour_branch(12) == "亥"
-    assert number_to_hour_branch(13) == "子"
-    assert number_to_hour_branch(20) == "未"
-    assert number_to_hour_branch(24) == "亥"
+    assert number_to_hour_branch(0) == "子"
+    assert number_to_hour_branch(1) == "丑"
+    assert number_to_hour_branch(2) == "丑"
+    assert number_to_hour_branch(9) == "巳"
+    assert number_to_hour_branch(10) == "巳"
+    assert number_to_hour_branch(11) == "午"
+    assert number_to_hour_branch(12) == "午"
+    assert number_to_hour_branch(23) == "子"
+    assert number_to_hour_branch(30) == "卯"
 
     divination = build_divination(
         "2026-05-26 10:14:15",
         timezone="Asia/Shanghai",
         mode="number",
-        number=20,
-        gender="女",
+        number=9,
+        gender=None,
         question="测试报数",
     )
 
-    assert divination.chart.calendar.hour_branch == "未"
-    assert divination.divination["number"] == 20
-    assert divination.divination["source_hour_branch"] == "未"
+    assert divination.chart.calendar.hour_branch == "巳"
+    assert divination.divination["number"] == 9
+    assert divination.divination["source_hour_branch"] == "巳"
 
 
 def test_querent_life_year_and_traveling_year_follow_local_rule():
@@ -338,11 +347,17 @@ def test_querent_life_year_and_traveling_year_follow_local_rule():
     assert female["traveling_year"] == "申"
 
 
-def test_divination_requires_gender_and_question_for_agent_input():
+def test_divination_allows_missing_gender_for_agent_input():
+    divination = build_divination("2026-05-26 10:14:15", mode="time", gender=None, question="测试")
+
+    assert divination.querent["gender"] is None
+    assert divination.querent["question"] == "测试"
+
+
+def test_divination_requires_question_for_agent_input():
     try:
-        build_divination("2026-05-26 10:14:15", mode="time", gender="", question=" ")
+        build_divination("2026-05-26 10:14:15", mode="time", gender=None, question=" ")
     except ValueError as exc:
-        assert "性别" in str(exc)
         assert "所问事" in str(exc)
     else:
         raise AssertionError("missing required fields should fail")

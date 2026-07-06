@@ -46,8 +46,8 @@ def test_cli_outputs_number_divination_json(capsys):
     payload = json.loads(capsys.readouterr().out)
 
     assert payload["divination"]["mode"] == "number"
-    assert payload["divination"]["source_hour_branch"] == "未"
-    assert payload["calendar"]["hour_branch"] == "未"
+    assert payload["divination"]["source_hour_branch"] == "戌"
+    assert payload["calendar"]["hour_branch"] == "戌"
     assert payload["querent"]["life_branch"] == "戌"
     assert payload["querent"]["traveling_year"] == "戌"
 

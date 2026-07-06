@@ -2,11 +2,17 @@
 name = "dongxuan-agent"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["sxtwl"]
+dependencies = [
+    "fastapi>=0.136.3",
+    "httpx[socks]>=0.28.1",
+    "sxtwl",
+    "uvicorn>=0.48.0",
+]
 
 [project.scripts]
 daliuren-chart = "dongxuan_agent.cli:main"
 bazi-chart = "dongxuan_agent.bazi_cli:main"
+liuyao-chart = "dongxuan_agent.liuyao_cli:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

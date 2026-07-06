@@ -24,6 +24,8 @@ def test_bazi_prompt_requires_analysis_hints_and_rule_cards():
     assert "禁止只按五行数量断强弱" in text
     assert "analysis_hints" in text
     assert "rule_cards" in text
+    assert "knowledge_layers" in text
+    assert "理法 -> 象法 -> 案例" in text
     assert "主象" in text
     assert "次象" in text
     assert "待核验点" in text
@@ -35,6 +37,8 @@ def test_bazi_prompt_forbids_candidate_piling():
     assert "禁止候选清单式断法" in text
     assert "最多一个次象" in text
     assert "必须回指" in text
+    assert "主断优先" in text
+    assert "多方验证" in text
 
 
 def test_bazi_prompt_constrains_major_and_career_identification():
@@ -70,3 +74,5 @@ def test_bazi_prompt_constrains_model_assisted_major_landing():
     assert "不得覆盖命盘画像裁决" in text
     assert "若有 `discipline_profile`" in text
     assert "若有 `spirit_sha_analysis.active`" in text
+    assert "案例层" in text
+    assert "禄命派" in text
