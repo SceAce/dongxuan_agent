@@ -3,10 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from .chart import BRANCH_COMBINE, BRANCH_HARM, HIDDEN_STEMS, BaziChart, ten_god
 from ..core.calendar_engine import year_ganzhi
 from ..core.constants import BRANCH_OPPOSITE, BRANCH_PUNISH
-
+from .chart import BRANCH_COMBINE, BRANCH_HARM, HIDDEN_STEMS, BaziChart, ten_god
 
 PILLAR_BRANCH_FIELDS = {
     "年柱": "年支",

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 QUESTION_TEMPLATES = {
     "事业/工作": {
         "template_id": "career_work",

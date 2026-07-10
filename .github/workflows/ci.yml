@@ -1,0 +1,21 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --frozen --all-groups
+      - run: uv run ruff check dongxuan_agent tests
+      - run: uv run mypy dongxuan_agent
+      - run: uv run pytest -q
+      - run: uv run python -m compileall -q dongxuan_agent
+      - run: uv build

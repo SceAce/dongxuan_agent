@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 CLASHES = {
     "子": "午",
     "丑": "未",

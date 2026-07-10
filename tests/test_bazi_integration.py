@@ -1,8 +1,8 @@
 from dongxuan_agent.bazi import build_bazi_chart
-from dongxuan_agent.bazi.year import build_year_analysis_hints
 from dongxuan_agent.bazi.climate import analyze_climate
 from dongxuan_agent.bazi.integration import build_integrated_analysis
 from dongxuan_agent.bazi.strength import analyze_strength
+from dongxuan_agent.bazi.year import build_year_analysis_hints
 
 
 def _integration(target_year: int = 2025) -> dict:

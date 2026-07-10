@@ -1,5 +1,5 @@
-from dongxuan_agent.liuyao.imagery import build_imagery_context
 from dongxuan_agent.liuyao import build_liuyao_chart
+from dongxuan_agent.liuyao.imagery import build_imagery_context
 
 
 def test_work_offer_contract_matches_official_and_parent_images():

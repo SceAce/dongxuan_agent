@@ -1,5 +1,4 @@
-from dongxuan_agent.liuyao.hexagrams import hexagram_by_name
-from dongxuan_agent.liuyao.hexagrams import HEXAGRAMS_BY_BINARY
+from dongxuan_agent.liuyao.hexagrams import HEXAGRAMS_BY_BINARY, hexagram_by_name
 from dongxuan_agent.liuyao.najia import build_najia, palace_info
 
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 GENERAL_CARDS = (
     {
         "name": "原局结构优先",

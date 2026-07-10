@@ -1,7 +1,7 @@
 import importlib
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 
 def test_daliuren_package_public_exports_are_lazy():

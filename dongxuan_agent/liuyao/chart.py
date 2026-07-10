@@ -18,7 +18,6 @@ from .judgment import enrich_payload
 from .najia import build_najia, palace_info
 from .question import classify_question
 
-
 RANDOM_STATES = ("老阴", "少阳", "少阴", "老阳")
 RANDOM_WEIGHTS = (1, 3, 3, 1)
 

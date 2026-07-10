@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .relations import CONTROLLING, GENERATING
 
-
 BRANCH_ELEMENTS = {
     "子": "水",
     "丑": "土",

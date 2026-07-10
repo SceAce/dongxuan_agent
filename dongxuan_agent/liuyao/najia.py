@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .hexagrams import Hexagram
 
-
 BRANCH_ELEMENTS = {
     "子": "水",
     "丑": "土",

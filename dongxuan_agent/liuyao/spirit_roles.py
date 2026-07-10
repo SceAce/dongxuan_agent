@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .relations import CONTROLLING, GENERATING, element_relation
 
-
 ROLE_NAMES = {
     "useful_god": "用神",
     "original_spirit": "原神",

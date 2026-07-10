@@ -17,6 +17,18 @@ liuyao-chart = "dongxuan_agent.liuyao.cli:main"
 pythonpath = ["."]
 testpaths = ["tests"]
 
+[tool.mypy]
+python_version = "3.11"
+files = ["dongxuan_agent"]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
 [tool.setuptools.package-data]
 "dongxuan_agent.resources.prompts" = ["*.md"]
 
@@ -25,5 +37,7 @@ include = ["dongxuan_agent*"]
 
 [dependency-groups]
 dev = [
+    "mypy>=1.18",
     "pytest>=9.0.3",
+    "ruff>=0.12",
 ]

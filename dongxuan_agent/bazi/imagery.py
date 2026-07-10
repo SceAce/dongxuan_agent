@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
+from ..core.knowledge import read_knowledge_json, relative_source, resolve_knowledge_location
 from .discipline import build_discipline_profile, build_middle_image_scores
 from .spirits import build_bazi_spirit_sha_analysis
-from ..core.knowledge import read_knowledge_json, relative_source, resolve_knowledge_location
-
 
 SYMBOLIC_LAYERS_SOURCE = Path("structured/bazi_symbolic_layers.json")
 
@@ -363,7 +363,7 @@ def _landing_evidence(payload: dict) -> dict:
     dynamics = _symbolic_dynamics(payload)
     active_middle = _active_middle_image_names(payload, dynamics)
     middle_strengths = _middle_image_strengths(payload, active_middle)
-    result = {"supported": [], "weakened": [], "excluded": []}
+    result: dict[str, list[dict[str, object]]] = {"supported": [], "weakened": [], "excluded": []}
     for rule in data.get("modern_landing_rules", []):
         required = set(rule.get("requires_all", []))
         prefers = set(rule.get("prefers_any", []))
@@ -457,7 +457,7 @@ def _middle_image_strengths(payload: dict, active_middle: set[str]) -> dict[str,
     context = _context_frame(payload)
     visible_ten_god = ((payload.get("analysis_hints") or {}).get("flow_year") or {}).get("stem_ten_god", "")
     conflicts = "；".join(remedy.get("conflicts", []))
-    strengths = {}
+    strengths: dict[str, dict[str, Any]] = {}
 
     def add(name: str, score: float, reason: str) -> None:
         if name not in active_middle:
@@ -551,7 +551,6 @@ def _active_middle_image_names(payload: dict, dynamics: dict) -> set[str]:
 
 def _symbolic_dynamics(payload: dict) -> dict:
     forces = (payload.get("strength_analysis") or {}).get("element_forces") or {}
-    strength = payload.get("strength_analysis") or {}
     climate = payload.get("climate_analysis") or {}
     pattern = (payload.get("pattern_analysis") or {}).get("primary_pattern") or {}
     remedy = payload.get("remedy_analysis") or {}

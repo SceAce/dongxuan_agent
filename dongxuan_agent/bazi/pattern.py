@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .chart import HIDDEN_STEMS, BaziChart, ten_god
 
-
 TEN_GOD_PATTERN = {
     "正官": "正官格",
     "七杀": "七杀格",

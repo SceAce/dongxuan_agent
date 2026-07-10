@@ -4,7 +4,6 @@ from pathlib import Path
 
 from ..core.knowledge import relative_source, resolve_knowledge_location
 
-
 MODERN_CASE_SOURCE = Path("sources/林烽-大六壬经典案例解析-clean.md")
 MODERN_CASE_PAGE = Path("cases/daliuren/林烽-大六壬经典案例解析.md")
 

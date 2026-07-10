@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 BRANCH_OPPOSITE = {
     "子": "午",
     "丑": "未",

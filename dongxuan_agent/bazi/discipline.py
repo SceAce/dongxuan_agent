@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 MIDDLE_IMAGES = {
     "信息处理",
     "技能输出",
@@ -73,7 +72,7 @@ def build_middle_image_scores(
     spirit_sha_analysis: dict[str, Any],
     question: str = "",
 ) -> dict[str, dict[str, Any]]:
-    scores = {
+    scores: dict[str, dict[str, Any]] = {
         image: {
             "base_score": _base_score(item or {}),
             "spirit_delta": 0.0,
@@ -163,9 +162,9 @@ def _apply_question_deltas(scores: dict[str, dict[str, Any]], question: str) -> 
 
 
 def _score_group(name: str, weights: dict[str, float], middle_scores: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    supporting_images = []
-    spirit_factors = []
-    structural_evidence = []
+    supporting_images: list[str] = []
+    spirit_factors: list[str] = []
+    structural_evidence: list[str] = []
     has_structural_support = False
     score = 0.0
     for image, weight in weights.items():

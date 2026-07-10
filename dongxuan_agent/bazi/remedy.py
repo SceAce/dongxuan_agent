@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 SUPPORT_ELEMENTS = {
     "木": ("水", "木"),
     "火": ("木", "火"),
@@ -19,9 +18,9 @@ DRAIN_ELEMENTS = {
 
 
 def analyze_remedy(strength_analysis: dict, climate_analysis: dict, pattern_analysis: dict) -> dict:
-    problems = []
-    candidates = []
-    conflicts = []
+    problems: list[dict[str, object]] = []
+    candidates: list[dict[str, object]] = []
+    conflicts: list[str] = []
 
     _add_climate_remedy(climate_analysis, problems, candidates)
     _add_strength_remedy(strength_analysis, problems, candidates)

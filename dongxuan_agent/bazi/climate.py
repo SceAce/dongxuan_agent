@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+from typing import TypedDict
+
 from .chart import BaziChart
 
 
-SEASON_PROFILES = {
+class SeasonProfile(TypedDict):
+    profile: str
+    temperature_bias: float
+    moisture_bias: float
+
+
+SEASON_PROFILES: dict[str, SeasonProfile] = {
     "亥": {"profile": "亥月寒水渐旺", "temperature_bias": -1.4, "moisture_bias": 1.2},
     "子": {"profile": "子月寒水当令", "temperature_bias": -1.8, "moisture_bias": 1.5},
     "丑": {"profile": "丑月寒湿土", "temperature_bias": -1.5, "moisture_bias": 1.1},
@@ -34,7 +42,7 @@ def analyze_climate(chart: BaziChart, strength_analysis: dict | None = None) -> 
     temperature_score = profile["temperature_bias"] + fire * 0.22 + wood * 0.06 - water * 0.2 - metal * 0.05
     moisture_score = profile["moisture_bias"] + water * 0.2 + wood * 0.04 - fire * 0.16 - metal * 0.07
 
-    preferred_elements = []
+    preferred_elements: list[str] = []
     if temperature_score < -0.4:
         preferred_elements.extend(["火", "燥土"])
     elif temperature_score > 0.4:

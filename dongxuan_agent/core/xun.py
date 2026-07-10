@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .constants import BRANCHES, JIAZI, STEMS
+from .constants import BRANCHES, JIAZI
 
 
 def build_xun_dun(day_gz: str) -> dict:

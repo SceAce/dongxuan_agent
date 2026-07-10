@@ -2,19 +2,23 @@ from __future__ import annotations
 
 from .advance_retreat import (
     build_advance_retreat_analysis,
+)
+from .advance_retreat import (
     completion_factors as advance_retreat_completion_factors,
 )
 from .combinations import build_combination_analysis, completion_factors
 from .flying_hidden import (
     attach_hidden_spirits,
     build_flying_hidden_analysis,
+)
+from .flying_hidden import (
     completion_factors as flying_hidden_completion_factors,
 )
 from .imagery import build_imagery_context, build_useful_god_selection
 from .relations import branch_relation, element_relation, return_relation_label
 from .six_spirits import assign_six_spirits
-from .spirit_sha import auxiliary_marks_payload, build_spirit_sha_analysis
 from .spirit_roles import advanced_layers, build_completion_chain, build_spirit_role_analysis
+from .spirit_sha import auxiliary_marks_payload, build_spirit_sha_analysis
 from .strength import BRANCH_ELEMENTS, effective_strength, extreme_state, seasonal_state
 from .templates import build_question_template
 from .timing import build_timing_analysis

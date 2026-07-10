@@ -9,7 +9,12 @@ from dongxuan_agent.apps.prompts import read_prompt
 from dongxuan_agent.daliuren.chart import build_chart
 from dongxuan_agent.daliuren.divination import build_divination
 from dongxuan_agent.daliuren.knowledge import build_daliuren_knowledge_context, render_daliuren_knowledge_markdown
-from dongxuan_agent.daliuren.render import chart_to_json, divination_to_json, render_chart_markdown, render_divination_markdown
+from dongxuan_agent.daliuren.render import (
+    chart_to_json,
+    divination_to_json,
+    render_chart_markdown,
+    render_divination_markdown,
+)
 from dongxuan_agent.daliuren.rule_cards import build_rule_context
 
 

@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from .chart import BRANCH_COMBINE, BRANCH_HARM, HIDDEN_STEMS, BaziChart
+from typing import Any
+
 from ..core.constants import (
     BRANCH_ELEMENTS,
-    BRANCH_OPPOSITE,
-    BRANCH_PUNISH,
     CONTROLLING,
     GENERATING,
     STEM_ELEMENTS,
     STEM_LODGING_BRANCH,
 )
-
+from .chart import HIDDEN_STEMS, BaziChart
 
 ELEMENTS = ("木", "火", "土", "金", "水")
 
@@ -39,7 +38,7 @@ def analyze_strength(chart: BaziChart) -> dict:
     day_master = payload["day_master"]
     day_element = STEM_ELEMENTS[day_master]
     branch_relations = payload.get("branch_relationships") or []
-    forces = {
+    forces: dict[str, dict[str, Any]] = {
         element: {
             "count": 0,
             "season_power": SEASON_POWER[month_branch][element],

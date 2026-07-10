@@ -7,7 +7,6 @@ from functools import reduce
 from operator import mul
 from typing import Literal
 
-
 Confidence = Literal["strong", "playable", "small", "avoid"]
 RiskProfile = Literal["conservative", "balanced", "aggressive"]
 

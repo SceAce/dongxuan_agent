@@ -1,6 +1,5 @@
 from dongxuan_agent.apps.prompts import read_prompt
 
-
 PROMPT = read_prompt("bazi")
 
 

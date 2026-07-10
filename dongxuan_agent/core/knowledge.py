@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-
 DEFAULT_KNOWLEDGE_ROOT = Path("/home/source/Documents/东玄知识库/wiki")
 
 

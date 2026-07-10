@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 NOBLEMAN_BY_STEM = {
     "甲": ("丑", "未"),
     "戊": ("丑", "未"),

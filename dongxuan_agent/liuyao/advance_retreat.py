@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 ADVANCE_PAIRS = {("寅", "卯"), ("巳", "午"), ("申", "酉"), ("亥", "子")}
 RETREAT_PAIRS = {(right, left) for left, right in ADVANCE_PAIRS}
 

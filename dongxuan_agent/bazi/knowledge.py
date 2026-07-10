@@ -4,14 +4,13 @@ from pathlib import Path
 
 from ..core.knowledge import read_knowledge_json, relative_source, resolve_knowledge_location
 
-
 SYMBOLIC_LAYERS_SOURCE = Path("structured/bazi_symbolic_layers.json")
 TOPIC_SOURCE = Path("topics/八字.md")
 
 
 def build_bazi_knowledge_context() -> dict:
     location = resolve_knowledge_location()
-    symbolic_status = location.status
+    symbolic_status: str = location.status
     if location.status == "available":
         _, symbolic_status = read_knowledge_json(location.root / SYMBOLIC_LAYERS_SOURCE)
     return {

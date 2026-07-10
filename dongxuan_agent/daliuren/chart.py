@@ -208,7 +208,7 @@ def build_transmission_details(
     xun_dun: dict,
     month_branch: str,
 ) -> tuple[dict[str, str | None], dict[str, str | None], dict[str, str | None]]:
-    details = []
+    details: list[dict[str, str | None]] = []
     for branch in transmissions.items:
         if branch is None:
             details.append({

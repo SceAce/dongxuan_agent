@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 THREE_COMBINATIONS = {
     ("申", "子", "辰"): "水",
     ("亥", "卯", "未"): "木",

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .constants import BRANCH_ELEMENTS, GENERATING
 
-
 MONTH_ELEMENT = {
     "寅": "木", "卯": "木", "辰": "土",
     "巳": "火", "午": "火", "未": "土",

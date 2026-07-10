@@ -4,7 +4,6 @@ from typing import Any
 
 from ..core.constants import DAY_NOBLEMAN, STEM_LODGING_BRANCH
 
-
 WENCHANG = {
     "甲": "巳", "乙": "午", "丙": "申", "丁": "酉", "戊": "申",
     "己": "酉", "庚": "亥", "辛": "子", "壬": "寅", "癸": "卯",

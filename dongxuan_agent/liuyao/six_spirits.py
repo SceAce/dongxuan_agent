@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 SIX_SPIRIT_ORDER = ["青龙", "朱雀", "勾陈", "螣蛇", "白虎", "玄武"]
 
 START_BY_DAY_STEM = {

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 ROLE_SCORE = {
     "调候药": 4,
     "扶抑药": 3,

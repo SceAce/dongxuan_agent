@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 SIX_RELATIVE_IMAGERY = {
     "官鬼": {
         "near_self": ["压力", "忧虑", "约束", "责任", "风险"],

@@ -19,11 +19,20 @@ from dongxuan_agent.core.constants import (
 
 
 class LessonLike(Protocol):
-    name: str
-    lower: str
-    upper: str
-    relation: str
-    lower_branch: str
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def lower(self) -> str: ...
+
+    @property
+    def upper(self) -> str: ...
+
+    @property
+    def relation(self) -> str: ...
+
+    @property
+    def lower_branch(self) -> str: ...
 
 
 @dataclass(frozen=True)

@@ -2,18 +2,17 @@ from __future__ import annotations
 
 from dongxuan_agent.core.calendar_engine import CalendarInfo
 from dongxuan_agent.core.constants import (
-    BRANCHES,
     BRANCH_ELEMENTS,
     BRANCH_OPPOSITE,
     BRANCH_YINYANG,
+    BRANCHES,
     CONTROLLING,
     STEM_ELEMENTS,
-    STEM_LODGING_BRANCH,
     STEM_YINYANG,
 )
 from dongxuan_agent.core.season import season_state
-from .transmissions import Transmissions
 
+from .transmissions import Transmissions
 
 DAY_VIRTUE = {
     "甲": "寅", "乙": "申",
@@ -51,7 +50,7 @@ def build_spirit_sha(
     year_branch = calendar.year_gz[1]
     month_branch = calendar.month_gz[1]
     xun_dun = xun_dun or {}
-    all_spirits = {
+    spirit_groups: dict[str, dict[str, dict[str, str]]] = {
         "day_based": _day_based(day_stem),
         "branch_based": _branch_based(day_branch),
         "year_based": {
@@ -67,9 +66,9 @@ def build_spirit_sha(
             "丁马": _spirit("丁马", _dingma(xun_dun), "又名旬丁、六丁，三马之一，主动摇、变化、出行、灯火动摇。"),
         },
     }
-    flat = _flatten(all_spirits)
-    all_spirits["active"] = _active_hits(flat, calendar, four_lessons, transmissions, extra_positions)
-    return all_spirits
+    flat = _flatten(spirit_groups)
+    active = _active_hits(flat, calendar, four_lessons, transmissions, extra_positions)
+    return {**spirit_groups, "active": active}
 
 
 def _day_based(day_stem: str) -> dict[str, dict[str, str]]:
