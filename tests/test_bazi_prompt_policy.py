@@ -1,11 +1,11 @@
-from dongxuan_agent.apps.prompts import prompt_path
+from dongxuan_agent.apps.prompts import read_prompt
 
 
-PROMPT = prompt_path("bazi")
+PROMPT = read_prompt("bazi")
 
 
 def test_bazi_prompt_requires_analysis_hints_and_rule_cards():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "# 八字年份事件分析 Prompt" in text
     assert "没有八字盘，不做断语" in text
@@ -32,7 +32,7 @@ def test_bazi_prompt_requires_analysis_hints_and_rule_cards():
 
 
 def test_bazi_prompt_forbids_candidate_piling():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "禁止候选清单式断法" in text
     assert "最多一个次象" in text
@@ -42,7 +42,7 @@ def test_bazi_prompt_forbids_candidate_piling():
 
 
 def test_bazi_prompt_constrains_major_and_career_identification():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "专业/职业/行业识别题" in text
     assert "抽象取象画像" in text
@@ -65,7 +65,7 @@ def test_bazi_prompt_constrains_major_and_career_identification():
 
 
 def test_bazi_prompt_constrains_model_assisted_major_landing():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "discipline_profile" in text
     assert "神煞只作辅助加权" in text

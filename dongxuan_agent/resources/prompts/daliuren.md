@@ -15,22 +15,22 @@
 
 ## 工具调用
 
-优先使用上下文脚本：
+测算时使用已安装的命令输出 JSON 上下文：
 
 ```bash
-python3 /home/source/Documents/东玄知识库/tools/daliuren_session.py "<时间>" \
+daliuren-chart "<时间>" \
   --mode time|live-hour|number \
   --gender 男|女 \
   --question "<所问事>" \
   --background "<当前背景>" \
   --birth-year <出生年> \
-  --include-prompt
+  --format json
 ```
 
 只需要排盘时可使用：
 
 ```bash
-python3 /home/source/Documents/东玄知识库/tools/daliuren_chart.py "<时间>" --format json
+daliuren-chart "<时间>" --format json
 ```
 
 ## 必须字段

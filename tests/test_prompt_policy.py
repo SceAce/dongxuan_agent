@@ -1,11 +1,11 @@
-from dongxuan_agent.apps.prompts import prompt_path
+from dongxuan_agent.apps.prompts import read_prompt
 
 
-PROMPT = prompt_path("daliuren")
+PROMPT = read_prompt("daliuren")
 
 
 def test_prompt_defines_issue_specific_spirit_selection():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "## 分测事专用神煞" in text
     assert "年运/流年" in text
@@ -17,7 +17,7 @@ def test_prompt_defines_issue_specific_spirit_selection():
 
 
 def test_prompt_templates_require_structure_and_avoid_spirit_piling():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "每个问题模板必须按以下顺序使用" in text
     assert "先定类神" in text
@@ -27,7 +27,7 @@ def test_prompt_templates_require_structure_and_avoid_spirit_piling():
 
 
 def test_prompt_keeps_sixty_four_lesson_bodies_as_not_implemented():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "## 64课体使用边界" in text
     assert "lesson_bodies" in text
@@ -36,7 +36,7 @@ def test_prompt_keeps_sixty_four_lesson_bodies_as_not_implemented():
 
 
 def test_prompt_matches_current_daliuren_casting_rules():
-    text = PROMPT.read_text(encoding="utf-8")
+    text = PROMPT
 
     assert "性别：可选" in text
     assert "“巳”和“巳时”都取巳时" in text

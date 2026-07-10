@@ -4,7 +4,7 @@
 
 ## 硬规则
 
-- 没有八字盘，不做断语；先调用 `/home/source/Documents/东玄知识库/tools/bazi_session.py`。
+- 没有八字盘，不做断语；至少先调用 `bazi-chart "<出生时间>" --format json` 获取命盘 JSON，完整分析还必须提供下列上下文字段。
 - JSON 是唯一排盘依据；不要改写四柱、大运、流年。
 - 若有 `strength_analysis` 与 `climate_analysis`，必须先看日主强弱、五行有效力量、根气真假/受损、寒暖燥湿，再分析大运流年。
 - 若有 `pattern_analysis`，必须说明月令取格、候选格局、成格证据、破格/扰格证据；不得把 V1 候选格局直接说成最终用神。
