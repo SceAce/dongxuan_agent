@@ -73,11 +73,6 @@ def build_bazi_rule_context(question: str | None = None, target_year: int | None
         if any(keyword in question for keyword in keywords)
     ]
 
-    if target_year is not None and "学业" not in selected_domains:
-        selected_domains.append("学业")
-    if target_year is not None and "财" not in selected_domains:
-        selected_domains.append("财")
-
     cards.extend(DOMAIN_CARDS[domain] for domain in selected_domains)
 
     return {

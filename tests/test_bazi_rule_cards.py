@@ -27,15 +27,17 @@ def test_bazi_rule_context_returns_general_and_year_event_cards():
     assert all(card["avoid"] for card in context["cards"])
     assert all(card["sources"] for card in context["cards"])
     assert all(card["implemented"] is True for card in context["cards"])
+    assert "学业/考试取象" not in names
+    assert "财务/资源取象" not in names
 
 
-def test_bazi_rule_context_includes_event_domain_cards():
+def test_target_year_only_adds_domains_named_in_question():
     context = build_bazi_rule_context(question="2025年学业和感情发生了什么", target_year=2025)
     names = {card["name"] for card in context["cards"]}
 
     assert "学业/考试取象" in names
     assert "感情/关系取象" in names
-    assert "财务/资源取象" in names
+    assert "财务/资源取象" not in names
 
 
 def test_bazi_rule_context_uses_chart_structure_mode_without_target_year():
