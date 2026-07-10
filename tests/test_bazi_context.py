@@ -4,7 +4,7 @@ from inspect import signature
 from dongxuan_agent.bazi.context import build_bazi_context
 
 
-def test_bazi_context_builds_full_payload_with_stable_fields():
+def test_bazi_context_builds_full_payload_with_stable_fields(available_knowledge_root):
     payload = build_bazi_context(
         "2006-12-18 12:30:00",
         timezone="Asia/Shanghai",

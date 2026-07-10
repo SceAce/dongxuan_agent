@@ -76,7 +76,7 @@ def test_imagery_question_domain_can_bias_school_topic():
     assert result["main_image"]["domain"] in {"学业/考试/竞赛", "技术/项目/竞赛"}
 
 
-def test_major_identification_converges_and_uses_season_strength():
+def test_major_identification_converges_and_uses_season_strength(available_knowledge_root):
     result = build_imagery_analysis(_payload("他2024年高考后最可能学什么专业"))
 
     assert result["question_domain"] == "专业/职业识别"
@@ -147,7 +147,7 @@ def test_major_identification_includes_spirit_sha_and_discipline_profile():
     assert guidance["llm_landing_constraints"]
 
 
-def test_spirit_sha_does_not_replace_existing_landing_evidence():
+def test_spirit_sha_does_not_replace_existing_landing_evidence(available_knowledge_root):
     result = build_imagery_analysis(_payload("他2024年高考后适合什么专业"))
     guidance = result["answer_guidance"]["major_or_career_identification"]
 

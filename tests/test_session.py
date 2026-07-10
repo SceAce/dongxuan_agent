@@ -9,7 +9,7 @@ def _extract_json_block(output: str) -> dict:
     return json.loads(output[start:end].strip())
 
 
-def test_session_outputs_context_json(capsys):
+def test_session_outputs_context_json(capsys, available_knowledge_root):
     assert main([
         "2026-05-26 10:14:15",
         "--mode",
