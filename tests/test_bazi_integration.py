@@ -57,3 +57,12 @@ def test_integrated_analysis_converges_to_one_main_axis_with_reasoning_chain():
     assert any("流年" in item for item in integrated["reasoning_chain"])
     assert len(integrated["event_shape"]) > 0
     assert any("不等于" in item for item in integrated["avoid_overread"])
+
+
+def test_integrated_analysis_keeps_natal_and_year_when_luck_has_not_started():
+    result = _integration(target_year=2006)
+
+    assert result["luck_influence"]["ganzhi"] is None
+    assert result["natal_structure"]["day_master"] == "辛"
+    assert result["year_influence"]["ganzhi"] == "丙戌"
+    assert any("目标年份尚未起运" in item for item in result["uncertainty"])

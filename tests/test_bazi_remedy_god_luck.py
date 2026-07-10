@@ -8,14 +8,14 @@ from dongxuan_agent.bazi.remedy import analyze_remedy
 from dongxuan_agent.bazi.strength import analyze_strength
 
 
-def _fixture():
+def _fixture(target_year: int = 2025):
     chart = build_bazi_chart("2006-12-18 12:30:00", timezone="Asia/Shanghai", gender="男")
     strength = analyze_strength(chart)
     climate = analyze_climate(chart, strength)
     pattern = analyze_pattern(chart)
     remedy = analyze_remedy(strength, climate, pattern)
     gods = build_god_candidates(remedy, strength, climate, pattern)
-    hints = build_year_analysis_hints(chart, 2025)
+    hints = build_year_analysis_hints(chart, target_year)
     luck_year = analyze_luck_year_remedy(chart, remedy, gods, hints)
     return remedy, gods, luck_year
 
@@ -54,3 +54,13 @@ def test_luck_year_remedy_marks_luck_as_adding_problem_and_year_as_mixed():
     assert luck_year["combined_effect"] == "药病并见"
     assert any("大运" in item for item in luck_year["reasoning_chain"])
     assert any("流年" in item for item in luck_year["reasoning_chain"])
+
+
+def test_luck_year_remedy_uses_luck_status_when_luck_has_not_started():
+    _, _, luck_year = _fixture(target_year=2006)
+
+    luck_effect = luck_year["luck_effect_on_remedy"]
+    assert luck_effect["ganzhi"] is None
+    assert luck_effect["effect"] == "未知"
+    assert any("目标年份尚未起运" in item for item in luck_effect["evidence"])
+    assert luck_year["year_effect_on_remedy"]["ganzhi"] == "丙戌"

@@ -12,18 +12,28 @@ def build_integrated_analysis(
 ) -> dict:
     payload = chart.to_dict()
     natal = _natal_structure(strength_analysis, climate_analysis)
-    luck = _luck_influence(payload, strength_analysis, climate_analysis, year_hints.get("current_luck"))
+    luck_status = year_hints["luck_status"]
+    luck = _luck_influence(
+        payload,
+        strength_analysis,
+        climate_analysis,
+        year_hints.get("current_luck"),
+        luck_status,
+    )
     year = _year_influence(year_hints)
     integrated = _integrated_analysis(natal, luck, year, year_hints)
+    uncertainty = [
+        "三层合参 V1 用原局强弱调候、大运十神/气候作用、流年引动关系做结构化收敛；尚未纳入格局成败和用神定论。",
+        "大运与流年的合化成败、三合三会成局、岁运并临细则仍需后续精校。",
+    ]
+    if luck_status["status"] != "matched":
+        uncertainty.append(luck_status["message"])
     return {
         "natal_structure": natal,
         "luck_influence": luck,
         "year_influence": year,
         "integrated_analysis": integrated,
-        "uncertainty": [
-            "三层合参 V1 用原局强弱调候、大运十神/气候作用、流年引动关系做结构化收敛；尚未纳入格局成败和用神定论。",
-            "大运与流年的合化成败、三合三会成局、岁运并临细则仍需后续精校。",
-        ],
+        "uncertainty": uncertainty,
     }
 
 
@@ -61,15 +71,24 @@ def _natal_structure(strength: dict, climate: dict) -> dict:
     }
 
 
-def _luck_influence(payload: dict, strength: dict, climate: dict, current_luck: dict | None) -> dict:
+def _luck_influence(
+    payload: dict,
+    strength: dict,
+    climate: dict,
+    current_luck: dict | None,
+    luck_status: dict,
+) -> dict:
     if not current_luck:
         return {
             "ganzhi": None,
-            "supports_or_drains": "未提供性别或大运，无法定位当前大运。",
-            "climate_effect": "未知",
+            "status": luck_status["status"],
+            "status_message": luck_status["message"],
+            "virtual_age": luck_status["virtual_age"],
+            "supports_or_drains": luck_status["message"],
+            "climate_effect": "未纳入",
             "ten_god_theme": [],
             "activated_palaces": [],
-            "trend": "未纳入十年背景。",
+            "trend": luck_status["message"],
         }
     day_master = payload["day_master"]
     day_element = STEM_ELEMENTS[day_master]
@@ -83,6 +102,8 @@ def _luck_influence(payload: dict, strength: dict, climate: dict, current_luck: 
     climate_effect = _climate_effect(stem + branch, climate)
     return {
         "ganzhi": gz,
+        "status": luck_status["status"],
+        "status_message": luck_status["message"],
         "virtual_age": current_luck.get("virtual_age"),
         "supports_or_drains": _support_label(supports),
         "climate_effect": climate_effect,
@@ -119,10 +140,16 @@ def _integrated_analysis(natal: dict, luck: dict, year: dict, year_hints: dict) 
         pressure.append(f"大运{luck['ganzhi']}对调候作用为{luck['climate_effect']}。")
     if relation_words:
         pressure.append("流年触发 " + "、".join(relation_words) + "，事件感增强。")
+    luck_reasoning = (
+        f"大运：{luck['ganzhi']}，主题为{'、'.join(luck['ten_god_theme']) or '未定'}，"
+        f"对日主为{luck['supports_or_drains']}，调候作用为{luck['climate_effect']}。"
+        if luck["ganzhi"]
+        else f"大运：{luck['status_message']}"
+    )
     reasoning = [
         f"原局：{natal['day_master']}{natal['day_element']}强弱为{natal['day_master_level']}，{natal['climate_profile']}，调候取 {'、'.join(natal['climate_need']) or '中和'}。",
         f"原局根气：{natal['root_summary']}",
-        f"大运：{luck['ganzhi']}，主题为{'、'.join(luck['ten_god_theme']) or '未定'}，对日主为{luck['supports_or_drains']}，调候作用为{luck['climate_effect']}。",
+        luck_reasoning,
         f"流年：{year['ganzhi']}，天干为{visible}，藏干见{'、'.join(year['hidden_ten_gods'])}。",
     ]
     if relation_words:

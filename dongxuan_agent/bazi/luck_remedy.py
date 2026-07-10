@@ -6,8 +6,9 @@ from ..core.constants import STEM_ELEMENTS
 
 def analyze_luck_year_remedy(chart: BaziChart, remedy_analysis: dict, god_candidates: dict, year_hints: dict) -> dict:
     current_luck = year_hints.get("current_luck")
+    luck_status = year_hints["luck_status"]
     flow_year = year_hints["flow_year"]
-    luck_effect = _luck_effect(current_luck, remedy_analysis, god_candidates)
+    luck_effect = _luck_effect(current_luck, luck_status, remedy_analysis, god_candidates)
     year_effect = _year_effect(flow_year, remedy_analysis, god_candidates, year_hints)
     combined = _combined_effect(luck_effect["effect"], year_effect["effect"])
     return {
@@ -26,12 +27,21 @@ def analyze_luck_year_remedy(chart: BaziChart, remedy_analysis: dict, god_candid
     }
 
 
-def _luck_effect(current_luck: dict | None, remedy: dict, gods: dict) -> dict:
+def _luck_effect(current_luck: dict | None, luck_status: dict, remedy: dict, gods: dict) -> dict:
     if not current_luck:
-        return {"ganzhi": None, "effect": "未知", "evidence": ["未提供性别或未定位大运。"]}
+        return {
+            "ganzhi": None,
+            "status": luck_status["status"],
+            "virtual_age": luck_status["virtual_age"],
+            "effect": "未知",
+            "evidence": [luck_status["message"]],
+        }
     gz = current_luck["ganzhi"]
     elements = _ganzhi_elements(gz)
-    return _effect_payload(gz, elements, remedy, gods)
+    payload = _effect_payload(gz, elements, remedy, gods)
+    payload["status"] = luck_status["status"]
+    payload["virtual_age"] = luck_status["virtual_age"]
+    return payload
 
 
 def _year_effect(flow_year: dict, remedy: dict, gods: dict, year_hints: dict) -> dict:
@@ -101,6 +111,8 @@ def _combined_effect(luck_effect: str, year_effect: str) -> str:
 
 
 def _luck_reason(effect: dict) -> str:
+    if effect["ganzhi"] is None:
+        return f"大运未纳入，作用为{effect['effect']}：{'；'.join(effect['evidence'])}"
     return f"大运{effect['ganzhi']}对病药作用为{effect['effect']}：{'；'.join(effect['evidence'])}"
 
 

@@ -26,10 +26,10 @@ PALACE_MEANINGS = {
 
 def build_year_analysis_hints(chart: BaziChart, target_year: int) -> dict:
     payload = chart.to_dict()
+    current_luck, luck_status = _match_current_luck(payload, target_year)
     target_ganzhi = year_ganzhi(target_year)
     flow_stem, flow_branch = target_ganzhi[0], target_ganzhi[1]
     day_master = payload["day_master"]
-    current_luck = _current_luck(payload, target_year)
     flow_year = {
         "ganzhi": target_ganzhi,
         "stem": flow_stem,
@@ -47,6 +47,7 @@ def build_year_analysis_hints(chart: BaziChart, target_year: int) -> dict:
         "target_year": target_year,
         "year_ganzhi": target_ganzhi,
         "current_luck": current_luck,
+        "luck_status": luck_status,
         "flow_year": flow_year,
         "activated_relations": activated_relations,
         "activated_palaces": activated_palaces,
@@ -55,24 +56,43 @@ def build_year_analysis_hints(chart: BaziChart, target_year: int) -> dict:
     }
 
 
-def _current_luck(payload: dict, target_year: int) -> dict | None:
-    luck = payload.get("luck") or {}
-    cycles = luck.get("cycles") or []
-    if not cycles:
-        return None
+def _match_current_luck(payload: dict, target_year: int) -> tuple[dict | None, dict]:
     birth_year = datetime.fromisoformat(payload["calendar"]["datetime"]).year
+    if target_year < birth_year:
+        raise ValueError("目标年份不能早于出生年份")
+
     virtual_age = target_year - birth_year + 1
+    cycles = (payload.get("luck") or {}).get("cycles") or []
+    if not cycles:
+        return None, {
+            "status": "unavailable",
+            "virtual_age": virtual_age,
+            "message": "未提供有效性别，无法生成大运。",
+        }
+    if virtual_age < cycles[0]["start_age_years"]:
+        return None, {
+            "status": "not_started",
+            "virtual_age": virtual_age,
+            "message": "目标年份尚未起运。",
+        }
     for cycle in cycles:
         if cycle["start_age_years"] <= virtual_age < cycle["end_age_years"]:
-            return {
-                **cycle,
-                "virtual_age": virtual_age,
-                "match_rule": "按目标年虚岁落入大运 start_age_years/end_age_years 区间匹配。",
-            }
-    return {
-        **cycles[-1],
+            return (
+                {
+                    **cycle,
+                    "virtual_age": virtual_age,
+                    "match_rule": "按目标年虚岁落入大运区间匹配。",
+                },
+                {
+                    "status": "matched",
+                    "virtual_age": virtual_age,
+                    "message": "已匹配当前大运。",
+                },
+            )
+    return None, {
+        "status": "out_of_range",
         "virtual_age": virtual_age,
-        "match_rule": "目标年虚岁超出已列大运，回退到最后一个已知大运。",
+        "message": "目标年份超出已生成大运范围。",
     }
 
 
