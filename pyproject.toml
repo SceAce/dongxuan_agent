@@ -2,12 +2,7 @@
 name = "dongxuan-agent"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = [
-    "fastapi>=0.136.3",
-    "httpx[socks]>=0.28.1",
-    "sxtwl",
-    "uvicorn>=0.48.0",
-]
+dependencies = ["sxtwl"]
 
 [project.scripts]
 daliuren-chart = "dongxuan_agent.daliuren.cli:main"
