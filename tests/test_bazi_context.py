@@ -1,3 +1,5 @@
+from inspect import signature
+
 from dongxuan_agent.bazi.context import build_bazi_context
 
 
@@ -25,3 +27,7 @@ def test_bazi_context_builds_full_payload_with_stable_fields():
     assert payload["knowledge_layers"]["book_sets"]["symbolic"]
     assert payload["knowledge_layers"]["book_sets"]["cases"]
     assert payload["knowledge_layers"]["case_policy"]["prefer"] == "禄命派"
+
+
+def test_bazi_context_does_not_expose_legacy_zi_hour_selector():
+    assert "zi_hour_rule" not in signature(build_bazi_context).parameters

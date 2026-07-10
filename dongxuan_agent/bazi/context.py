@@ -20,7 +20,6 @@ def build_bazi_context(
     timezone: str = "Asia/Shanghai",
     gender: str | None = None,
     longitude: float | None = None,
-    zi_hour_rule: str = "whole",
     target_year: int | None = None,
     question: str | None = None,
 ) -> dict:
@@ -29,7 +28,6 @@ def build_bazi_context(
         timezone=timezone,
         gender=gender,
         longitude=longitude,
-        zi_hour_rule=zi_hour_rule,
     )
     payload = chart.to_dict()
     strength_analysis = analyze_strength(chart)

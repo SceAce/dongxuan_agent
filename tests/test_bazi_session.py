@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from bazi_session import main
 
 
@@ -54,3 +56,11 @@ def test_bazi_session_can_include_prompt(capsys):
     assert "### 八字知识分层" in output
     assert "案例偏好：禄命派" in output
     assert "## 八字工具上下文" in output
+
+
+def test_bazi_session_does_not_expose_legacy_zi_hour_selector(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--help"])
+
+    assert exc_info.value.code == 0
+    assert "--zi-hour-rule" not in capsys.readouterr().out

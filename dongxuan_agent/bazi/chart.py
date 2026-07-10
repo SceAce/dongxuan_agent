@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import math
 from zoneinfo import ZoneInfo
 
 import sxtwl
 
-from ..core.calendar_engine import CalendarInfo, get_calendar_info, hour_gz_by_branch, parse_datetime, xunkong_for_day
+from ..core.calendar_engine import CalendarInfo, get_calendar_info, parse_datetime
 from ..core.constants import (
     BRANCH_OPPOSITE,
     BRANCH_PUNISH,
@@ -82,8 +83,8 @@ class BaziChart:
             "luck": self.luck,
             "xunkong": list(self.calendar.xunkong),
             "uncertainty": [
-                "八字排盘 V2 支持经度真太阳时近似校正、早晚子时 split/whole 规则、大运顺逆与三天一岁起运。",
-                "真太阳时 V2 仅按经度相对时区中央经线校正，未加入均时差；出生地经度缺省时不启用。",
+                "八字排盘 V2 支持经度近似校正、以 24:00 为日界的早晚子时规则、大运顺逆与三天一岁起运。",
+                "经度近似校正仅按经度相对时区中央经线计算，未加入均时差；出生地经度缺省时不启用。",
                 "基础 bazi_chart V2 只封装排盘字段；旺衰调候由 bazi_session 的 strength_analysis/climate_analysis 提供，格局由 pattern_analysis 提供，用神仍未实现。",
             ],
         }
@@ -95,10 +96,9 @@ def build_bazi_chart(
     timezone: str = "Asia/Shanghai",
     gender: str | None = None,
     longitude: float | None = None,
-    zi_hour_rule: str = "whole",
 ) -> BaziChart:
     adjusted_value, time_adjustment = _adjust_time(value, timezone, longitude)
-    calendar = _bazi_calendar(adjusted_value, timezone, zi_hour_rule)
+    calendar = get_calendar_info(adjusted_value, timezone)
     day_master = calendar.day_gz[0]
     pillar_values = (
         ("年柱", calendar.year_gz),
@@ -114,8 +114,9 @@ def build_bazi_chart(
         branch_relationships=tuple(_branch_relationships([item[1][1] for item in pillar_values])),
         time_adjustment=time_adjustment,
         time_rules={
-            "zi_hour_rule": zi_hour_rule,
-            "zi_hour_rule_note": "whole 为 23:00-00:59 同属当日子时；split 为 23:00-23:59 晚子换次日，00:00-00:59 早子属当日。",
+            "day_boundary": "24:00",
+            "zi_hour_rule": "early_late_split",
+            "note": "早晚子时，以 24:00 为日界；23:00-23:59 属当天晚子时，00:00-00:59 属当日早子时。",
         },
         luck=_build_luck(calendar, gender),
     )
@@ -131,17 +132,19 @@ def _adjust_time(value, timezone: str, longitude: float | None) -> tuple[datetim
             "longitude": None,
             "offset_minutes": 0,
         }
+    if not math.isfinite(longitude) or not -180 <= longitude <= 180:
+        raise ValueError("经度必须是 -180 到 180 之间的有限数")
     central_longitude = _timezone_central_longitude(dt)
     offset_minutes = round((longitude - central_longitude) * 4)
     adjusted = dt + timedelta(minutes=offset_minutes)
     return adjusted, {
-        "mode": "true_solar",
+        "mode": "longitude_approximation",
         "original_datetime": dt.isoformat(),
         "adjusted_datetime": adjusted.isoformat(),
         "longitude": longitude,
         "central_longitude": central_longitude,
         "offset_minutes": offset_minutes,
-        "rule": "经度每差 1 度折 4 分钟；V2 未加入均时差。",
+        "rule": "经度每差 1 度折 4 分钟；仅为经度近似校正，未加入均时差。",
     }
 
 
@@ -150,29 +153,6 @@ def _timezone_central_longitude(dt: datetime) -> float:
     if offset is None:
         return 120.0
     return offset.total_seconds() / 3600 * 15
-
-
-def _bazi_calendar(value: datetime, timezone: str, zi_hour_rule: str) -> CalendarInfo:
-    if zi_hour_rule not in {"whole", "split"}:
-        raise ValueError("zi_hour_rule 必须为 whole 或 split")
-    if zi_hour_rule == "whole":
-        return get_calendar_info(value, timezone)
-    dt = parse_datetime(value, timezone)
-    day_dt = dt + timedelta(days=1) if dt.hour == 23 else dt
-    base = get_calendar_info(day_dt, timezone)
-    hour_branch = BRANCHES[((dt.hour + 1) // 2) % 12]
-    hour_gz = hour_gz_by_branch(base.day_gz[0], hour_branch)
-    return CalendarInfo(
-        dt=dt,
-        timezone=base.timezone,
-        year_gz=base.year_gz,
-        month_gz=base.month_gz,
-        day_gz=base.day_gz,
-        hour_gz=hour_gz,
-        hour_branch=hour_branch,
-        xunkong=xunkong_for_day(base.day_gz),
-        month_general=base.month_general,
-    )
 
 
 def ten_god(day_master: str, other_stem: str) -> str:

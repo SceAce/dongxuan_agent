@@ -1,3 +1,5 @@
+import pytest
+
 from dongxuan_agent.bazi import build_bazi_chart
 
 
@@ -54,7 +56,7 @@ def test_bazi_chart_exposes_branch_combine():
     assert ("合", "巳申") in relationships
 
 
-def test_bazi_chart_can_apply_true_solar_time_by_longitude():
+def test_bazi_chart_can_apply_longitude_approximation():
     chart = build_bazi_chart(
         "2026-05-26 10:14:15",
         timezone="Asia/Shanghai",
@@ -63,27 +65,35 @@ def test_bazi_chart_can_apply_true_solar_time_by_longitude():
     )
     payload = chart.to_dict()
 
-    assert payload["time_adjustment"]["mode"] == "true_solar"
+    assert payload["time_adjustment"]["mode"] == "longitude_approximation"
     assert payload["time_adjustment"]["longitude"] == 90.0
     assert payload["calendar"]["hour_gz"] == "庚辰"
 
 
-def test_bazi_chart_late_zi_hour_changes_day_when_enabled():
-    normal = build_bazi_chart("2026-05-25 23:30:00", timezone="Asia/Shanghai", zi_hour_rule="whole")
-    split = build_bazi_chart("2026-05-25 23:30:00", timezone="Asia/Shanghai", zi_hour_rule="split")
+def test_bazi_chart_uses_midnight_as_day_boundary_for_zi_hour():
+    late = build_bazi_chart("2026-05-25 23:30:00", timezone="Asia/Shanghai")
+    early = build_bazi_chart("2026-05-26 00:30:00", timezone="Asia/Shanghai")
 
-    assert normal.to_dict()["calendar"]["day_gz"] == "己亥"
-    assert normal.to_dict()["calendar"]["hour_gz"] == "甲子"
-    assert split.to_dict()["calendar"]["day_gz"] == "庚子"
-    assert split.to_dict()["calendar"]["hour_gz"] == "丙子"
-    assert split.to_dict()["time_rules"]["zi_hour_rule"] == "split"
+    assert late.calendar.day_gz == "己亥"
+    assert late.calendar.hour_gz == "甲子"
+    assert early.calendar.day_gz == "庚子"
+    assert early.calendar.hour_gz == "丙子"
+    assert late.time_rules == {
+        "day_boundary": "24:00",
+        "zi_hour_rule": "early_late_split",
+        "note": "早晚子时，以 24:00 为日界；23:00-23:59 属当天晚子时，00:00-00:59 属当日早子时。",
+    }
 
 
-def test_bazi_chart_early_zi_hour_keeps_day_when_split_enabled():
-    split = build_bazi_chart("2026-05-26 00:30:00", timezone="Asia/Shanghai", zi_hour_rule="split")
+@pytest.mark.parametrize("longitude", [-180.0, 180.0])
+def test_bazi_chart_accepts_longitude_boundaries(longitude):
+    assert build_bazi_chart("2026-05-26 10:14:15", longitude=longitude)
 
-    assert split.to_dict()["calendar"]["day_gz"] == "庚子"
-    assert split.to_dict()["calendar"]["hour_gz"] == "丙子"
+
+@pytest.mark.parametrize("longitude", [-180.01, 180.01, float("nan"), float("inf"), float("-inf")])
+def test_bazi_chart_rejects_invalid_longitude(longitude):
+    with pytest.raises(ValueError, match="经度必须是 -180 到 180 之间的有限数"):
+        build_bazi_chart("2026-05-26 10:14:15", longitude=longitude)
 
 
 def test_bazi_chart_exposes_dayun_direction_and_start():

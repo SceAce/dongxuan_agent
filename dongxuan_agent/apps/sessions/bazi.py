@@ -16,7 +16,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timezone", default="Asia/Shanghai")
     parser.add_argument("--gender", choices=("男", "女"))
     parser.add_argument("--longitude", type=float)
-    parser.add_argument("--zi-hour-rule", choices=("whole", "split"), default="whole")
     parser.add_argument("--target-year", type=int)
     parser.add_argument("--question")
     parser.add_argument("--include-prompt", action="store_true")
@@ -28,7 +27,6 @@ def main(argv: list[str] | None = None) -> int:
         timezone=args.timezone,
         gender=args.gender,
         longitude=args.longitude,
-        zi_hour_rule=args.zi_hour_rule,
         target_year=args.target_year,
         question=args.question,
     )
