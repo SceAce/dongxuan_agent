@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from pathlib import Path
 
 from .discipline import build_discipline_profile, build_middle_image_scores
 from .spirits import build_bazi_spirit_sha_analysis
+from ..core.knowledge import read_knowledge_json, relative_source, resolve_knowledge_location
 
 
-WIKI_ROOT = Path("/home/source/Documents/东玄知识库/wiki")
-SYMBOLIC_LAYERS_PATH = WIKI_ROOT / "structured" / "bazi_symbolic_layers.json"
+SYMBOLIC_LAYERS_SOURCE = Path("structured/bazi_symbolic_layers.json")
 
 
 QUESTION_KEYWORDS = {
@@ -285,9 +284,12 @@ def _knowledge_query_terms(payload: dict, main: dict, secondary: dict) -> list[s
 
 
 def _knowledge_sources(terms: list[str]) -> list[dict]:
+    location = resolve_knowledge_location()
+    if location.status != "available":
+        return []
     sources = []
     for term in terms:
-        path = _knowledge_path(term)
+        path = _knowledge_path(term, location.root)
         if not path:
             continue
         excerpt = _knowledge_excerpt(path, term)
@@ -295,7 +297,7 @@ def _knowledge_sources(terms: list[str]) -> list[dict]:
             continue
         sources.append({
             "term": term,
-            "path": str(path),
+            "source": relative_source(path, location.root),
             "excerpt": excerpt,
         })
         if len(sources) >= 6:
@@ -303,10 +305,12 @@ def _knowledge_sources(terms: list[str]) -> list[dict]:
     return sources
 
 
-def _knowledge_path(term: str) -> Path | None:
+def _knowledge_path(term: str, root: Path) -> Path | None:
+    if not term or "/" in term or "\\" in term or term in {".", ".."}:
+        return None
     candidates = [
-        WIKI_ROOT / "entities" / f"{term}.md",
-        WIKI_ROOT / "topics" / f"{term}.md",
+        root / "entities" / f"{term}.md",
+        root / "topics" / f"{term}.md",
     ]
     for path in candidates:
         if path.exists():
@@ -315,7 +319,10 @@ def _knowledge_path(term: str) -> Path | None:
 
 
 def _knowledge_excerpt(path: Path, term: str) -> str:
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return ""
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     content = []
     for line in lines:
@@ -329,12 +336,13 @@ def _knowledge_excerpt(path: Path, term: str) -> str:
 
 
 def _symbolic_layers(payload: dict) -> dict:
-    data = _load_symbolic_layers()
+    data, status, source = _load_symbolic_layers()
     dynamics = _symbolic_dynamics(payload)
     query_terms = set(_knowledge_query_terms(payload, {}, {}))
     active_middle = _active_middle_image_names(payload, dynamics)
     return {
-        "source_path": str(SYMBOLIC_LAYERS_PATH),
+        "source": source,
+        "availability": {"status": status},
         "traditional_symbols": [
             item for item in data.get("traditional_symbols", [])
             if item.get("name") in query_terms or item.get("kind") in query_terms
@@ -351,7 +359,7 @@ def _symbolic_layers(payload: dict) -> dict:
 
 
 def _landing_evidence(payload: dict) -> dict:
-    data = _load_symbolic_layers()
+    data, _, _ = _load_symbolic_layers()
     dynamics = _symbolic_dynamics(payload)
     active_middle = _active_middle_image_names(payload, dynamics)
     middle_strengths = _middle_image_strengths(payload, active_middle)
@@ -504,10 +512,13 @@ def _base_middle_image_scores(payload: dict) -> dict[str, dict]:
     }
 
 
-def _load_symbolic_layers() -> dict:
-    if not SYMBOLIC_LAYERS_PATH.exists():
-        return {"traditional_symbols": [], "middle_images": [], "modern_landing_rules": []}
-    return json.loads(SYMBOLIC_LAYERS_PATH.read_text(encoding="utf-8"))
+def _load_symbolic_layers() -> tuple[dict, str, str]:
+    location = resolve_knowledge_location()
+    source = relative_source(location.root / SYMBOLIC_LAYERS_SOURCE, location.root)
+    if location.status != "available":
+        return {}, location.status, source
+    data, status = read_knowledge_json(location.root / SYMBOLIC_LAYERS_SOURCE)
+    return data, status, source
 
 
 def _active_middle_image_names(payload: dict, dynamics: dict) -> set[str]:

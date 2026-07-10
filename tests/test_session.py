@@ -37,6 +37,9 @@ def test_session_outputs_context_json(capsys):
     assert "rule_cards" in payload
     assert "knowledge_layers" in payload
     assert payload["knowledge_layers"]["layer_priority"] == ["理法", "象根", "案例"]
+    assert payload["knowledge_layers"]["availability"]["status"] == "available"
+    assert all(not page["source"].startswith("/") for page in payload["knowledge_layers"]["topic_pages"])
+    assert "/home/source" not in json.dumps(payload["knowledge_layers"], ensure_ascii=False)
     assert payload["rule_cards"]["question_type"] == "通用"
     assert payload["rule_cards"]["cards"]
 

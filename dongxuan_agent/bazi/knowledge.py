@@ -2,12 +2,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..core.knowledge import read_knowledge_json, relative_source, resolve_knowledge_location
 
-WIKI_ROOT = Path("/home/source/Documents/东玄知识库/wiki")
+
+SYMBOLIC_LAYERS_SOURCE = Path("structured/bazi_symbolic_layers.json")
+TOPIC_SOURCE = Path("topics/八字.md")
 
 
 def build_bazi_knowledge_context() -> dict:
+    location = resolve_knowledge_location()
+    symbolic_status = location.status
+    if location.status == "available":
+        _, symbolic_status = read_knowledge_json(location.root / SYMBOLIC_LAYERS_SOURCE)
     return {
+        "availability": {
+            "status": symbolic_status,
+            "source": location.source,
+        },
         "layer_priority": ["理法", "象法", "案例"],
         "book_sets": {
             "principle": [
@@ -41,26 +52,31 @@ def build_bazi_knowledge_context() -> dict:
         "topic_pages": [
             {
                 "name": "八字-理法",
-                "path": str(WIKI_ROOT / "topics" / "八字.md"),
+                "source": relative_source(location.root / TOPIC_SOURCE, location.root),
                 "role": "原局、大运、流年、强弱、调候、格局、病药的总纲入口。",
                 "key_points": ["先体后用", "先强弱后取象", "先三层后结论"],
             },
             {
                 "name": "八字-象法",
-                "path": str(WIKI_ROOT / "structured" / "bazi_symbolic_layers.json"),
+                "source": relative_source(location.root / SYMBOLIC_LAYERS_SOURCE, location.root),
                 "role": "五行、十神、宫位、格局与现代落点的结构化象义入口。",
                 "key_points": ["传统象", "中间画像", "现代落点"],
             },
             {
                 "name": "八字-案例总览",
-                "path": str(WIKI_ROOT / "topics" / "八字.md"),
+                "source": relative_source(location.root / TOPIC_SOURCE, location.root),
                 "role": "禄命派案例总览入口，后续可拆分为单独案例页。",
                 "key_points": ["千里命稿", "三命通会", "滴天髓", "四柱古籍经典合集"],
             },
         ],
         "source_status": {
-            "symbolic_layers": str(WIKI_ROOT / "structured" / "bazi_symbolic_layers.json"),
-            "topic_page": str(WIKI_ROOT / "topics" / "八字.md"),
+            "symbolic_layers": {
+                "source": relative_source(location.root / SYMBOLIC_LAYERS_SOURCE, location.root),
+                "status": symbolic_status,
+            },
+            "topic_page": {
+                "source": relative_source(location.root / TOPIC_SOURCE, location.root),
+                "status": "available" if (location.root / TOPIC_SOURCE).is_file() else "missing",
+            },
         },
     }
-

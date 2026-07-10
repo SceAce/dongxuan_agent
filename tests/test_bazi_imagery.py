@@ -89,8 +89,10 @@ def test_major_identification_converges_and_uses_season_strength():
     assert guidance["knowledge_query_terms"]
     assert {"五行", "十神", "旺衰", "干支"} <= set(guidance["knowledge_query_terms"])
     assert guidance["knowledge_sources"]
-    assert all(source["path"].startswith("/home/source/Documents/东玄知识库/wiki/") for source in guidance["knowledge_sources"])
+    assert all(source["source"].startswith(("entities/", "topics/")) for source in guidance["knowledge_sources"])
+    assert all(not source["source"].startswith("/") for source in guidance["knowledge_sources"])
     assert all(source["excerpt"] for source in guidance["knowledge_sources"])
+    assert guidance["symbolic_layers"]["source"] == "structured/bazi_symbolic_layers.json"
     assert guidance["symbolic_layers"]["middle_images"]
     assert guidance["symbolic_layers"]["modern_landing_rules"]
     assert "信息处理" in {item["name"] for item in guidance["symbolic_layers"]["middle_images"]}
