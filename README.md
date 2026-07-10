@@ -50,7 +50,7 @@ export DONGXUAN_KNOWLEDGE_ROOT=/path/to/knowledge-base/wiki
 ## 质量检查
 
 ```bash
-uv run ruff check dongxuan_agent tests
+uv run ruff check .
 uv run mypy dongxuan_agent
 uv run pytest -q
 uv run python -m compileall -q dongxuan_agent

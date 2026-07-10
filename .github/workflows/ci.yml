@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --frozen --all-groups
-      - run: uv run ruff check dongxuan_agent tests
+      - run: uv run ruff check .
       - run: uv run mypy dongxuan_agent
       - run: uv run pytest -q
       - run: uv run python -m compileall -q dongxuan_agent

@@ -3,6 +3,5 @@ from __future__ import annotations
 
 from tools.daliuren.chart_wrapper import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

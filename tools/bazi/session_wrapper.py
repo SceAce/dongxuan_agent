@@ -3,6 +3,5 @@ from __future__ import annotations
 
 from dongxuan_agent.apps.sessions.bazi import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())
