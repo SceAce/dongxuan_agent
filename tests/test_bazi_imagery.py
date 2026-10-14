@@ -1,3 +1,7 @@
+import json
+
+import pytest
+
 from dongxuan_agent.bazi import build_bazi_chart
 from dongxuan_agent.bazi.climate import analyze_climate
 from dongxuan_agent.bazi.context import build_bazi_context
@@ -10,6 +14,8 @@ from dongxuan_agent.bazi.remedy import analyze_remedy
 from dongxuan_agent.bazi.rule_cards import build_bazi_rule_context
 from dongxuan_agent.bazi.strength import analyze_strength
 from dongxuan_agent.bazi.year import build_year_analysis_hints
+
+pytestmark = pytest.mark.usefixtures("available_knowledge_root")
 
 
 def _payload(question="推断2025年发生了什么"):
@@ -185,3 +191,17 @@ def test_nested_imagery_discipline_profile_matches_flat_context_top_group():
     assert nested_guidance["discipline_profile"]["constraints_for_llm"]
     assert flat_guidance["discipline_profile"]["constraints_for_llm"]
     assert nested_groups[0]["name"] == flat_groups[0]["name"]
+
+
+def test_question_domain_rules_are_reloaded_from_knowledge(available_knowledge_root):
+    path = available_knowledge_root / "structured" / "bazi_symbolic_layers.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["imagery_runtime"]["question_domains"].insert(
+        0,
+        {"name": "测试领域", "keywords": ["专属触发词"]},
+    )
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    result = build_imagery_analysis(_payload("专属触发词"))
+
+    assert result["question_domain"] == "测试领域"

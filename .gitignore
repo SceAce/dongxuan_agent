@@ -9,3 +9,11 @@ htmlcov/
 dongxuan-data/
 data/runtime/
 .env
+
+# build artifacts
+build/
+dist/
+
+# local agent tooling state
+.superpowers/
+.skills-staging/

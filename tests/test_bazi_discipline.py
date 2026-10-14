@@ -1,6 +1,10 @@
+import json
+
 import pytest
 
 from dongxuan_agent.bazi.discipline import build_discipline_profile, build_middle_image_scores
+
+pytestmark = pytest.mark.usefixtures("available_knowledge_root")
 
 
 def test_middle_image_scores_accepts_score_shaped_base_and_preserves_evidence():
@@ -206,3 +210,21 @@ def test_discipline_profile_filters_empty_unsupported_groups(middle_scores):
     assert result["groups"] == []
     assert result["cross_domain"] is False
     assert result["recommended_mode"].startswith("证据不足")
+
+
+def test_discipline_groups_are_reloaded_from_knowledge(available_knowledge_root):
+    path = available_knowledge_root / "structured" / "bazi_symbolic_layers.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["discipline_runtime"]["groups"].insert(
+        0,
+        {"name": "knowledge_only_group", "weights": {"信息处理": 2.0}},
+    )
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    middle_scores = build_middle_image_scores(
+        {"信息处理": {"base_score": 1.0, "evidence": ["结构成立"]}},
+        {},
+    )
+    result = build_discipline_profile(middle_scores)
+
+    assert result["groups"][0]["name"] == "knowledge_only_group"

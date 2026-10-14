@@ -11,7 +11,7 @@ def _extract_json(output: str) -> dict:
     return json.loads(output[start:end].strip())
 
 
-def test_bazi_session_outputs_chart_hints_and_rule_cards(capsys):
+def test_bazi_session_outputs_chart_hints_and_rule_cards(capsys, available_knowledge_root):
     assert main([
         "2006-12-18 12:30:00",
         "--gender",

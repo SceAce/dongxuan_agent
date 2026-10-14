@@ -1,6 +1,6 @@
 # Dongxuan Agent
 
-东玄术数本地工具集，提供八字、大六壬和六爻的排盘、结构化分析上下文与提示词资源。项目只包含本地 CLI 和 Python 会话入口，不包含 Web 服务器、认证、管理后台或容器部署。
+东玄术数本地工具集，提供八字和大六壬的排盘、结构化分析上下文与提示词资源。项目只包含本地 CLI 和 Python 会话入口，不包含 Web 服务器、认证、管理后台或容器部署。
 
 ## 安装
 
@@ -18,9 +18,6 @@ uv run bazi-chart "2006-12-18 12:30:00" --gender 男 --format json
 
 # 大六壬
 uv run daliuren-chart "2026-05-26 10:14:15" --mode number --number 9 --question "所问事项" --format json
-
-# 六爻
-uv run liuyao-chart --hexagram "离之大有" --question "所问事项" --format json
 ```
 
 需要完整分析上下文和可选提示词时，使用仓库中的会话入口：
@@ -28,7 +25,6 @@ uv run liuyao-chart --hexagram "离之大有" --question "所问事项" --format
 ```bash
 uv run python bazi_session.py "2006-12-18 12:30:00" --gender 男 --target-year 2025 --question "所问事项" --include-prompt
 uv run python daliuren_session.py "2026-05-26 10:14:15" --mode number --number 9 --question "所问事项" --include-prompt
-uv run python liuyao_session.py --hexagram "离之大有" --question "所问事项" --include-prompt
 ```
 
 ## 本地知识库

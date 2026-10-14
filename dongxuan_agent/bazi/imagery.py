@@ -4,79 +4,73 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from ..core.knowledge import read_knowledge_json, relative_source, resolve_knowledge_location
-from .discipline import build_discipline_profile, build_middle_image_scores
+from ..core.knowledge import relative_source, resolve_knowledge_location
+from .discipline import build_discipline_profile, build_middle_image_scores, discipline_runtime_config
+from .knowledge import load_bazi_symbolic_layers
+from .rules import format_template, format_value, get_path, matches, number
 from .spirits import build_bazi_spirit_sha_analysis
-
-SYMBOLIC_LAYERS_SOURCE = Path("structured/bazi_symbolic_layers.json")
-
-
-QUESTION_KEYWORDS = {
-    "专业/职业识别": ("专业", "职业", "行业", "工作方向", "学什么", "读什么", "干什么", "就业方向"),
-    "学业/考试/竞赛": ("学业", "考试", "证书", "申请", "竞赛", "成绩", "录取", "升学", "课程"),
-    "资源/目标/关系": ("财", "钱", "资源", "关系", "对象", "恋爱", "合作", "机会"),
-    "技术/项目/竞赛": ("技术", "项目", "代码", "软件", "网络", "安全", "CTF", "开发", "训练"),
-    "迁移/环境变化": ("搬", "迁移", "出行", "换环境", "转学", "实习", "工作"),
-}
 
 
 def build_imagery_analysis(payload: dict) -> dict:
+    data, status, source = load_bazi_symbolic_layers()
+    runtime = data.get("imagery_runtime") or {}
+    policy = runtime.get("answer_policy") or {}
     question = payload.get("question") or ""
-    domain = _question_domain(question, payload)
-    context = _context_frame(payload)
-    candidates = _candidate_images(payload, domain, context)
+    domain = _question_domain(question, payload, runtime)
+    context = _context_frame(payload, runtime)
+    facts = {**payload, "question_domain": domain, "context_frame": context}
+    candidates = _candidate_images(facts, runtime)
     candidates = sorted(candidates, key=lambda item: item["score"], reverse=True)
     main = candidates[0] if candidates else _empty_image()
     secondary = _secondary_image(candidates, main)
     return {
+        "knowledge_runtime": {"source": source, "status": status},
         "question_domain": domain,
         "context_frame": context,
         "symbol_sources": _symbol_sources(payload),
         "candidate_images": candidates,
         "main_image": main,
         "secondary_image": secondary,
-        "answer_guidance": _answer_guidance(payload, domain, main, secondary),
-        "avoid_images": [
-            "不能仅凭财星直接断恋爱或得财，必须结合日支、问题背景和岁运引动。",
-            "不能仅凭官杀直接断灾祸或上岸，必须结合格局、药病和现实目标。",
-            "识别专业、职业、行业时必须先形成抽象取象画像，再给最多两个现实落点；不得罗列候选清单。",
-            "识别专业、职业、行业时必须先看月令季节力量、有效力量、干支作用、神煞辅助和强弱证据，不得把五行、十神或神煞直接等同于现实专业。",
-            "取象 V1 只做现代语境映射和证据收敛，不替代用户现实反馈。",
-        ],
-        "reasoning_chain": _reasoning_chain(payload, main, secondary),
-        "uncertainty": [
-            "取象 V1 输出抽象取象画像和知识库检索词，并要求每条象都有 JSON 字段证据；知识库实体页仍以索引为主，精细象义需继续结晶化。",
-            "现代背景只按出生年、目标年、问题词和命盘字段推断阶段，不把推断当作已确认事实。",
-        ],
+        "answer_guidance": _answer_guidance(payload, domain, main, secondary, data, runtime),
+        "avoid_images": list(policy.get("avoid_images") or []),
+        "reasoning_chain": _reasoning_chain(main, secondary, policy),
+        "uncertainty": list(policy.get("uncertainty") or []),
     }
 
 
-def _question_domain(question: str, payload: dict) -> str:
-    for domain, keywords in QUESTION_KEYWORDS.items():
-        if any(keyword in question for keyword in keywords):
-            return domain
-    if payload.get("analysis_hints"):
-        return "year_event"
-    return "general_year"
+def _question_domain(question: str, payload: dict, runtime: dict) -> str | None:
+    for rule in runtime.get("question_domains") or []:
+        if any(keyword in question for keyword in rule.get("keywords") or []):
+            return rule.get("name")
+    fallback = runtime.get("fallback_domains") or {}
+    return fallback.get("with_analysis_hints") if payload.get("analysis_hints") else fallback.get("default")
 
 
-def _context_frame(payload: dict) -> dict:
+def _context_frame(payload: dict, runtime: dict) -> dict:
     calendar = payload["chart"]["calendar"] if "chart" in payload else payload["calendar"]
     birth_year = datetime.fromisoformat(calendar["datetime"]).year
     target_year = (payload.get("analysis_hints") or {}).get("target_year")
     virtual_age = target_year - birth_year + 1 if target_year else None
-    if virtual_age is not None and 18 <= virtual_age <= 24:
-        age_stage = "大学/训练期"
-        modern_context = ["课程", "项目", "竞赛", "证书", "技术实践", "实习准备"]
-    elif virtual_age is not None and 25 <= virtual_age <= 35:
-        age_stage = "职业建立期"
-        modern_context = ["工作", "项目", "收入", "合作", "职业转换"]
-    else:
-        age_stage = "未定阶段"
-        modern_context = ["学习", "工作", "家庭", "关系", "资源"]
+    stage = runtime.get("default_context_stage") or {}
+    if virtual_age is not None:
+        stage = next((
+            item for item in runtime.get("context_stages") or []
+            if number(item.get("min_virtual_age")) <= virtual_age <= number(item.get("max_virtual_age"))
+        ), stage)
+    age_stage = stage.get("name")
+    modern_context = list(stage.get("modern_context") or [])
     evidence = []
     if virtual_age is not None:
-        evidence.append(_evidence("analysis_hints.current_luck.virtual_age", virtual_age, "按目标年虚岁判断现代阶段", f"目标年虚岁 {virtual_age}，优先映射到{age_stage}。"))
+        text = format_template(
+            runtime.get("context_evidence_template", ""),
+            {"virtual_age": virtual_age, "age_stage": age_stage},
+        )
+        evidence.append(_evidence(
+            "analysis_hints.current_luck.virtual_age",
+            virtual_age,
+            "按目标年虚岁判断现代阶段",
+            text,
+        ))
     return {
         "age_stage": age_stage,
         "modern_context": modern_context,
@@ -84,116 +78,36 @@ def _context_frame(payload: dict) -> dict:
     }
 
 
-def _candidate_images(payload: dict, domain: str, context: dict) -> list[dict]:
+def _candidate_images(facts: dict, runtime: dict) -> list[dict]:
     candidates = []
-    candidates.extend(_pattern_images(payload))
-    candidates.extend(_year_images(payload))
-    candidates.extend(_remedy_images(payload))
-    candidates.extend(_relation_images(payload))
-    _apply_context_bias(candidates, domain, context)
+    for rule in runtime.get("candidate_rules") or []:
+        if not matches(rule.get("when"), facts):
+            continue
+        score = number(rule.get("score"))
+        for adjustment in rule.get("score_adjustments") or []:
+            if matches(adjustment.get("when"), facts):
+                score += number(adjustment.get("delta"))
+        evidence = [_configured_evidence(item, facts) for item in rule.get("evidence") or []]
+        candidates.append(_image(rule.get("domain"), rule.get("image"), score, evidence))
+
+    for candidate in candidates:
+        candidate_facts = {**facts, "candidate": candidate}
+        for rule in runtime.get("context_bias_rules") or []:
+            if not matches(rule.get("when"), candidate_facts):
+                continue
+            candidate["score"] += number(rule.get("delta"))
+            candidate["evidence"].append(_configured_evidence(rule.get("evidence") or {}, candidate_facts))
     return [item for item in candidates if item["evidence"]]
 
 
-def _pattern_images(payload: dict) -> list[dict]:
-    pattern = payload["pattern_analysis"]
-    primary = pattern["primary_pattern"]
-    images = []
-    if primary["name"] in {"食神格", "伤官格"}:
-        images.append(_image(
-            "技术/项目/竞赛",
-            "食伤格局主输出、表达、作品、技能训练；现代语境下优先落到技术实践、项目、竞赛或作品产出。",
-            4,
-            [
-                _evidence("pattern_analysis.primary_pattern", primary["name"], "格局现代取象", f"主候选格局为{primary['name']}。"),
-                _evidence("pattern_analysis.formation_evidence", pattern["formation_evidence"], "月令取格证据", "格局证据：" + "；".join(pattern["formation_evidence"])),
-            ],
-        ))
-    if primary["name"] in {"正官格", "七杀格"}:
-        images.append(_image("学业/考试/竞赛", "官杀格局主规则、考核、压力、资格。", 3, [_evidence("pattern_analysis.primary_pattern", primary["name"], "格局现代取象", f"主候选格局为{primary['name']}。")]))
-    return images
-
-
-def _year_images(payload: dict) -> list[dict]:
-    hints = payload.get("analysis_hints") or {}
-    flow = hints.get("flow_year") or {}
-    integration = payload.get("integrated_analysis") or {}
-    integrated = integration.get("integrated_analysis") or {}
-    candidates = []
-    visible = flow.get("stem_ten_god")
-    if visible and "财" in visible:
-        candidates.append(_image(
-            "资源/目标/关系",
-            "财星外显，现代语境优先取资源、目标、机会、合作与关系议题；男命可带感情线索但不单独定恋爱。",
-            4,
-            [
-                _evidence("analysis_hints.flow_year.stem_ten_god", visible, "十神取象", f"流年天干十神为{visible}。"),
-                _evidence("integrated_analysis.integrated_analysis.main_axis", integrated.get("main_axis"), "三层合参主轴", f"三层合参主轴：{integrated.get('main_axis')}。"),
-            ],
-        ))
-    event_shape = integrated.get("event_shape")
-    if event_shape:
-        candidates.append(_image(
-            "状态变化/环境触发",
-            "流年引动自身或大运支，取状态变化、阶段切换、事件触发。",
-            3,
-            [_evidence("integrated_analysis.integrated_analysis.event_shape", event_shape, "三层合参事件形态", event_shape)],
-        ))
-    return candidates
-
-
-def _remedy_images(payload: dict) -> list[dict]:
-    luck_year = payload.get("luck_year_remedy") or {}
-    remedy = payload.get("remedy_analysis") or {}
-    if not luck_year:
-        return []
-    return [
-        _image(
-            "压力中有转机",
-            "大运加病、流年来药或药病并见，取压力牵制中出现可用机会，但过程反复。",
-            3,
-            [
-                _evidence("remedy_analysis.priority", remedy.get("priority"), "病药优先级", f"病药优先级为{remedy.get('priority')}。"),
-                _evidence("luck_year_remedy.combined_effect", luck_year.get("combined_effect"), "岁运药病", f"岁运药病综合为{luck_year.get('combined_effect')}。"),
-            ],
-        )
-    ]
-
-
-def _relation_images(payload: dict) -> list[dict]:
-    hints = payload.get("analysis_hints") or {}
-    relations = hints.get("activated_relations") or []
-    if not relations:
-        return []
-    relation_text = "、".join(f"{item['field']}{item['type']}" for item in relations)
-    domains = {item.get("palace") for item in relations}
-    score = 3 + (1 if "日支" in domains else 0)
-    return [
-        _image(
-            "自身状态/关系宫位被触发",
-            "流年触及日支或大运支，取自身状态、关系宫位、阶段主题被引动。",
-            score,
-            [_evidence("analysis_hints.activated_relations", relations, "宫位引动取象", f"引动关系：{relation_text}。")],
-        )
-    ]
-
-
-def _apply_context_bias(candidates: list[dict], domain: str, context: dict) -> None:
-    for item in candidates:
-        if domain == "学业/考试/竞赛" and item["domain"] in {"学业/考试/竞赛", "技术/项目/竞赛"}:
-            item["score"] += 3
-            item["evidence"].append(_evidence("question", domain, "问题领域偏置", "用户问题指向学业/考试/竞赛，优先收敛到学习训练相关主象。"))
-        elif domain == "技术/项目/竞赛" and item["domain"] == "技术/项目/竞赛":
-            item["score"] += 3
-            item["evidence"].append(_evidence("question", domain, "问题领域偏置", "用户问题指向技术/项目/竞赛，优先收敛到技术实践。"))
-        elif domain == "专业/职业识别" and item["domain"] in {"技术/项目/竞赛", "学业/考试/竞赛"}:
-            item["score"] += 2
-            item["evidence"].append(_evidence("question", domain, "问题领域偏置", "用户问题指向专业/职业识别，先形成抽象取象画像，再给最多两个现实落点。"))
-        elif domain == "资源/目标/关系" and item["domain"] == "资源/目标/关系":
-            item["score"] += 3
-            item["evidence"].append(_evidence("question", domain, "问题领域偏置", "用户问题指向资源/关系，优先收敛到资源机会。"))
-        if context["age_stage"] == "大学/训练期" and item["domain"] in {"技术/项目/竞赛", "学业/考试/竞赛"}:
-            item["score"] += 2
-            item["evidence"].append(_evidence("context_frame.age_stage", context["age_stage"], "现代阶段取象", "大学/训练期优先把食伤、官印、财星映射到课程、项目、竞赛、证书、技术实践。"))
+def _configured_evidence(specification: dict, facts: dict) -> dict:
+    source_field = specification.get("source_field", "")
+    value_path = specification.get("source_value_path") or source_field
+    value = get_path(facts, value_path)
+    rendered_value = format_value(value, specification.get("value_format"))
+    text = specification.get("text", "").replace("{value}", rendered_value)
+    text = format_template(text, facts)
+    return _evidence(source_field, value, specification.get("rule", ""), text)
 
 
 def _symbol_sources(payload: dict) -> list[dict]:
@@ -214,47 +128,66 @@ def _secondary_image(candidates: list[dict], main: dict) -> dict:
     return candidates[1] if len(candidates) > 1 else _empty_image()
 
 
-def _reasoning_chain(payload: dict, main: dict, secondary: dict) -> list[str]:
+def _reasoning_chain(main: dict, secondary: dict, policy: dict) -> list[str]:
     chain = []
     if main.get("domain"):
         chain.append(f"主象收敛为{main['domain']}：{main['image']}")
     if secondary.get("domain"):
         chain.append(f"次象保留为{secondary['domain']}：{secondary['image']}")
-    chain.append("所有取象必须回指 evidence 字段；没有证据的类象不输出。")
+    if policy.get("reasoning_evidence_rule"):
+        chain.append(policy["reasoning_evidence_rule"])
     return chain
 
 
-def _answer_guidance(payload: dict, domain: str, main: dict, secondary: dict) -> dict:
-    if domain != "专业/职业识别":
+def _answer_guidance(
+    payload: dict,
+    domain: str | None,
+    main: dict,
+    secondary: dict,
+    data: dict,
+    runtime: dict,
+) -> dict:
+    policy = runtime.get("answer_policy") or {}
+    if domain != policy.get("major_domain"):
         return {}
     question = payload.get("question") or ""
     spirit_sha = build_bazi_spirit_sha_analysis(payload)
-    base_middle_scores = _base_middle_image_scores(payload)
-    middle_image_scores = build_middle_image_scores(base_middle_scores, spirit_sha, question)
-    discipline_profile = build_discipline_profile(middle_image_scores, question)
-    query_terms = _knowledge_query_terms(payload, main, secondary)
+    base_middle_scores = _base_middle_image_scores(payload, runtime)
+    discipline_config = discipline_runtime_config(data)
+    middle_image_scores = build_middle_image_scores(
+        base_middle_scores,
+        spirit_sha,
+        question,
+        config=discipline_config,
+    )
+    discipline_profile = build_discipline_profile(
+        middle_image_scores,
+        question,
+        config=discipline_config,
+    )
+    query_terms = _knowledge_query_terms(payload, main, secondary, runtime)
     return {
         "major_or_career_identification": {
-            "rule": "专业/职业/行业识别题必须先合参五行旺衰、干支作用、病药喜忌、神煞辅助和知识库象义，再归纳现实落点；神煞只作辅助加权。",
-            "max_real_world_landings": 2,
+            "rule": policy.get("rule"),
+            "max_real_world_landings": policy.get("max_real_world_landings"),
             "knowledge_query_terms": query_terms,
             "knowledge_sources": _knowledge_sources(query_terms),
-            "symbolic_layers": _symbolic_layers(payload),
-            "landing_evidence": _landing_evidence(payload),
+            "symbolic_layers": _symbolic_layers(payload, data, runtime),
+            "landing_evidence": _landing_evidence(payload, data, runtime),
             "symbolic_dynamics": _symbolic_dynamics(payload),
-            "direction_profile": _direction_profile(payload, main, secondary),
+            "direction_profile": _direction_profile(payload, main, secondary, runtime),
             "spirit_sha_analysis": spirit_sha,
             "middle_image_scores": middle_image_scores,
             "discipline_profile": discipline_profile,
             "llm_landing_constraints": discipline_profile["constraints_for_llm"],
             "evidence": _season_strength_evidence(payload),
-            "forbidden": "禁止输出五行/十神/神煞等于现实专业或行业的直接映射；禁止由工具预设专业名。",
+            "forbidden": policy.get("forbidden"),
         }
     }
 
 
-def _knowledge_query_terms(payload: dict, main: dict, secondary: dict) -> list[str]:
-    terms = ["五行", "十神", "旺衰", "干支"]
+def _knowledge_query_terms(payload: dict, main: dict, secondary: dict, runtime: dict) -> list[str]:
+    terms = list(runtime.get("knowledge_query_base_terms") or [])
     chart = payload.get("chart") or payload
     pattern = (payload.get("pattern_analysis") or {}).get("primary_pattern") or {}
     if pattern.get("name"):
@@ -335,11 +268,10 @@ def _knowledge_excerpt(path: Path, term: str) -> str:
     return excerpt[:240] or term
 
 
-def _symbolic_layers(payload: dict) -> dict:
-    data, status, source = _load_symbolic_layers()
-    dynamics = _symbolic_dynamics(payload)
-    query_terms = set(_knowledge_query_terms(payload, {}, {}))
-    active_middle = _active_middle_image_names(payload, dynamics)
+def _symbolic_layers(payload: dict, data: dict, runtime: dict) -> dict:
+    _, status, source = load_bazi_symbolic_layers()
+    query_terms = set(_knowledge_query_terms(payload, {}, {}, runtime))
+    active_middle = _active_middle_image_names(payload, runtime)
     return {
         "source": source,
         "availability": {"status": status},
@@ -358,11 +290,9 @@ def _symbolic_layers(payload: dict) -> dict:
     }
 
 
-def _landing_evidence(payload: dict) -> dict:
-    data, _, _ = _load_symbolic_layers()
-    dynamics = _symbolic_dynamics(payload)
-    active_middle = _active_middle_image_names(payload, dynamics)
-    middle_strengths = _middle_image_strengths(payload, active_middle)
+def _landing_evidence(payload: dict, data: dict, runtime: dict) -> dict:
+    active_middle = _active_middle_image_names(payload, runtime)
+    middle_strengths = _middle_image_strengths(payload, active_middle, runtime)
     result: dict[str, list[dict[str, object]]] = {"supported": [], "weakened": [], "excluded": []}
     for rule in data.get("modern_landing_rules", []):
         required = set(rule.get("requires_all", []))
@@ -377,7 +307,7 @@ def _landing_evidence(payload: dict) -> dict:
         if preferred_hits:
             evidence.append(f"加强画像：{ '、'.join(preferred_hits) }。")
         evidence.extend(_landing_strength_evidence(rule, middle_strengths, active_middle))
-        weak_reasons = _landing_rule_weak_reasons(rule, middle_strengths, active_middle)
+        weak_reasons = _landing_rule_weak_reasons(rule, middle_strengths, runtime)
         if missing:
             evidence.append(f"缺少必要画像：{ '、'.join(missing) }。")
             status = "excluded"
@@ -407,102 +337,47 @@ def _landing_strength_evidence(rule: dict, middle_strengths: dict[str, dict], ac
     return evidence
 
 
-def _landing_rule_weak_reasons(rule: dict, middle_strengths: dict[str, dict], active_middle: set[str]) -> list[str]:
+def _landing_rule_weak_reasons(rule: dict, middle_strengths: dict[str, dict], runtime: dict) -> list[str]:
     reasons = []
+    minimum = number(runtime.get("landing_required_min_score"))
     for name in rule.get("requires_all", []):
         item = middle_strengths.get(name, {"score": 0, "reasons": []})
-        if item.get("score", 0) < 1:
+        if number(item.get("score")) < minimum:
             reasons.append(f"{rule['name']}降级：必要画像{name}强度不足，不能作为第一落点。")
-    for exclusion in rule.get("excludes_if", []):
-        if _exclusion_condition_met(exclusion, middle_strengths, active_middle):
-            reasons.append(f"{rule['name']}降级：{exclusion}。")
+    facts = {"middle_scores": middle_strengths}
+    for condition in rule.get("weakening_conditions") or []:
+        if matches(condition.get("when"), facts):
+            reasons.append(f"{rule['name']}降级：{condition.get('reason')}。")
     return reasons
 
 
-def _exclusion_condition_met(exclusion: str, middle_strengths: dict[str, dict], active_middle: set[str]) -> bool:
-    def score(name: str) -> float:
-        return middle_strengths.get(name, {}).get("score", 0)
-
-    if "火弱受制" in exclusion or "火弱" in exclusion:
-        return score("规则训练") < 1 or score("工程系统") > score("规则训练")
-    if "资源经营无力" in exclusion or "财弱无根" in exclusion:
-        return score("资源经营") < 1
-    if "文本表达弱于工程系统" in exclusion:
-        return score("文本表达") < score("工程系统")
-    if "人文研究缺少印星承载" in exclusion:
-        return score("人文研究") < 1
-    if "制度法理无印承载" in exclusion:
-        return score("制度法理") < 1
-    if "规则训练弱于技术项目输出" in exclusion:
-        return score("规则训练") < score("技能输出")
-    if "教育训练缺少印食配合" in exclusion:
-        return score("教育训练") < 1
-    if "表达输出弱于工程项目训练" in exclusion:
-        return score("文本表达") < max(score("工程系统"), score("技能输出"))
-    if "公共传播缺少财星外显" in exclusion or "受众连接" in exclusion:
-        return score("公共传播") < 1
-    if "表达输出被重扰" in exclusion:
-        return score("文本表达") < 1
-    if "信息处理无力" in exclusion:
-        return score("信息处理") < 1
-    if "纯资源经营强于技能输出" in exclusion:
-        return score("资源经营") > score("技能输出")
-    return False
-
-
-def _middle_image_strengths(payload: dict, active_middle: set[str]) -> dict[str, dict]:
-    forces = (payload.get("strength_analysis") or {}).get("element_forces") or {}
-    pattern = (payload.get("pattern_analysis") or {}).get("primary_pattern") or {}
-    remedy = payload.get("remedy_analysis") or {}
-    context = _context_frame(payload)
-    visible_ten_god = ((payload.get("analysis_hints") or {}).get("flow_year") or {}).get("stem_ten_god", "")
-    conflicts = "；".join(remedy.get("conflicts", []))
-    strengths: dict[str, dict[str, Any]] = {}
-
-    def add(name: str, score: float, reason: str) -> None:
-        if name not in active_middle:
-            return
-        item = strengths.setdefault(name, {"score": 1.0, "reasons": []})
-        item["score"] = round(item["score"] + score, 2)
-        item["reasons"].append(reason)
-
-    water = forces.get("水", {})
-    fire = forces.get("火", {})
-    metal = forces.get("金", {})
-    earth = forces.get("土", {})
-    wood = forces.get("木", {})
-
-    add("信息处理", 0.35 if water.get("effective_power", 0) >= 1 else -0.35, f"水有效力{water.get('effective_power')}、季节系数{water.get('season_power')}")
-    add("信息处理", 0.25 if pattern.get("name") in {"食神格", "伤官格"} else 0, f"格局为{pattern.get('name')}，参与理解和输出")
-    add("技能输出", 0.45 if pattern.get("name") in {"食神格", "伤官格"} else -0.25, f"格局为{pattern.get('name')}，取作品、项目、训练成果")
-    add("技能输出", -0.15 if "劫财" in conflicts else 0, "格局受比劫扰动时，输出仍可用但稳定性下降")
-    add("工程系统", 0.45 if metal.get("effective_power", 0) >= 2 else -0.2, f"金有效力{metal.get('effective_power')}，主结构、工具、精密")
-    add("工程系统", 0.2 if earth.get("effective_power", 0) >= 1 else 0, f"土有效力{earth.get('effective_power')}，能承载体系")
-    add("规则训练", 0.2 if context["age_stage"] == "大学/训练期" else 0, f"现代阶段为{context['age_stage']}")
-    add("规则训练", -0.25 if fire.get("season_power", 0) < 0.8 else 0.15, f"火季节系数{fire.get('season_power')}，规则显化受季节影响")
-    add("规则训练", -0.2 if fire.get("damage_notes") else 0, f"火受扰：{'、'.join(fire.get('damage_notes', [])) or '无明显冲害'}")
-    add("资源经营", 0.35 if "财" in visible_ten_god else -0.2, f"流年外显十神为{visible_ten_god}")
-    add("资源经营", 0.25 if wood.get("effective_power", 0) > 0.8 else -0.45, f"木有效力{wood.get('effective_power')}、根气{wood.get('root_status')}")
-    add("文本表达", 0.3 if pattern.get("name") in {"食神格", "伤官格"} else -0.2, f"格局为{pattern.get('name')}，带表达和作品象")
-    add("文本表达", -0.3 if metal.get("effective_power", 0) >= 2 else 0, f"金有效力{metal.get('effective_power')}，结构/工程画像对纯文本表达形成竞争")
-    add("制度法理", 0.3 if metal.get("effective_power", 0) >= 2 else -0.2, f"金有效力{metal.get('effective_power')}，带边界、裁断、规范")
-    add("制度法理", -0.2 if fire.get("season_power", 0) < 0.8 or fire.get("damage_notes") else 0.1, f"火季节系数{fire.get('season_power')}，受扰：{'、'.join(fire.get('damage_notes', [])) or '无明显冲害'}")
-    add("教育训练", 0.25 if context["age_stage"] == "大学/训练期" else 0, f"现代阶段为{context['age_stage']}，学历训练语境成立")
-    add("教育训练", -0.2 if "劫财" in conflicts else 0, "比劫扰格时，知识传递象弱于技能项目输出")
-    add("公共传播", 0.25 if "财" in visible_ten_god else -0.2, f"流年外显十神为{visible_ten_god}，决定受众/目标连接")
-    add("公共传播", -0.35 if wood.get("effective_power", 0) <= 0.8 or wood.get("root_status") == "无根" else 0.15, f"木有效力{wood.get('effective_power')}、根气{wood.get('root_status')}")
-    add("人文研究", 0.25 if water.get("effective_power", 0) >= 1 else -0.2, f"水有效力{water.get('effective_power')}，带阅读、理解、阐释")
-    add("人文研究", -0.25 if metal.get("effective_power", 0) >= 2 else 0, f"金有效力{metal.get('effective_power')}，工程系统画像更强")
-
-    for name in active_middle:
-        strengths.setdefault(name, {"score": 1.0, "reasons": ["由命盘字段合参成立"]})
+def _middle_image_strengths(payload: dict, active_middle: set[str], runtime: dict) -> dict[str, dict]:
+    scoring = runtime.get("middle_image_scoring") or {}
+    initial_score = number(scoring.get("initial_score"))
+    context = _context_frame(payload, runtime)
+    facts = {**payload, "context_frame": context}
+    strengths: dict[str, dict[str, Any]] = {
+        name: {"score": initial_score, "reasons": []}
+        for name in active_middle
+    }
+    for rule in scoring.get("rules") or []:
+        name = rule.get("image")
+        if name not in strengths:
+            continue
+        delta = number(rule.get("delta")) if matches(rule.get("when"), facts) else number(rule.get("else_delta"))
+        strengths[name]["score"] = round(strengths[name]["score"] + delta, 2)
+        if rule.get("reason"):
+            strengths[name]["reasons"].append(format_template(rule["reason"], facts))
+    default_reason = scoring.get("default_reason")
+    for item in strengths.values():
+        if not item["reasons"] and default_reason:
+            item["reasons"].append(default_reason)
     return strengths
 
 
-def _base_middle_image_scores(payload: dict) -> dict[str, dict]:
-    dynamics = _symbolic_dynamics(payload)
-    active_middle = _active_middle_image_names(payload, dynamics)
-    strengths = _middle_image_strengths(payload, active_middle)
+def _base_middle_image_scores(payload: dict, runtime: dict) -> dict[str, dict]:
+    active_middle = _active_middle_image_names(payload, runtime)
+    strengths = _middle_image_strengths(payload, active_middle, runtime)
     return {
         name: {
             "score": item.get("score", 0),
@@ -512,41 +387,14 @@ def _base_middle_image_scores(payload: dict) -> dict[str, dict]:
     }
 
 
-def _load_symbolic_layers() -> tuple[dict, str, str]:
-    location = resolve_knowledge_location()
-    source = relative_source(location.root / SYMBOLIC_LAYERS_SOURCE, location.root)
-    if location.status != "available":
-        return {}, location.status, source
-    data, status = read_knowledge_json(location.root / SYMBOLIC_LAYERS_SOURCE)
-    return data, status, source
-
-
-def _active_middle_image_names(payload: dict, dynamics: dict) -> set[str]:
-    names = set()
-    pattern = (payload.get("pattern_analysis") or {}).get("primary_pattern") or {}
-    forces = (payload.get("strength_analysis") or {}).get("element_forces") or {}
-    context = _context_frame(payload)
-    visible_ten_god = ((payload.get("analysis_hints") or {}).get("flow_year") or {}).get("stem_ten_god", "")
-
-    if forces.get("水", {}).get("effective_power", 0) >= 1 or pattern.get("name") in {"食神格", "伤官格"}:
-        names.add("信息处理")
-    if pattern.get("name") in {"食神格", "伤官格"}:
-        names.add("技能输出")
-        names.add("文本表达")
-    if forces.get("金", {}).get("effective_power", 0) >= 2 or forces.get("土", {}).get("effective_power", 0) >= 1:
-        names.add("工程系统")
-    if context["age_stage"] == "大学/训练期" or "官" in visible_ten_god or "印" in visible_ten_god:
-        names.add("规则训练")
-        names.add("教育训练")
-    if forces.get("金", {}).get("effective_power", 0) >= 2 and (context["age_stage"] == "大学/训练期" or "官" in visible_ten_god):
-        names.add("制度法理")
-    if "财" in visible_ten_god and forces.get("木", {}).get("effective_power", 0) > 0.8:
-        names.add("资源经营")
-    if "财" in visible_ten_god and pattern.get("name") in {"食神格", "伤官格"}:
-        names.add("公共传播")
-    if forces.get("水", {}).get("effective_power", 0) >= 1 and context["age_stage"] == "大学/训练期":
-        names.add("人文研究")
-    return names
+def _active_middle_image_names(payload: dict, runtime: dict) -> set[str]:
+    context = _context_frame(payload, runtime)
+    facts = {**payload, "context_frame": context}
+    return {
+        rule["name"]
+        for rule in runtime.get("active_middle_image_rules") or []
+        if rule.get("name") and matches(rule.get("when"), facts)
+    }
 
 
 def _symbolic_dynamics(payload: dict) -> dict:
@@ -586,37 +434,36 @@ def _symbolic_dynamics(payload: dict) -> dict:
     }
 
 
-def _direction_profile(payload: dict, main: dict, secondary: dict) -> dict:
-    context = _context_frame(payload)
-    pattern = (payload.get("pattern_analysis") or {}).get("primary_pattern") or {}
-    climate = payload.get("climate_analysis") or {}
-    remedy = payload.get("remedy_analysis") or {}
-    forces = (payload.get("strength_analysis") or {}).get("element_forces") or {}
-
-    favorable = []
-    if pattern.get("name") in {"食神格", "伤官格"}:
-        favorable.extend(["脑力理解", "表达输出", "技能产出", "项目训练"])
-    if context["age_stage"] == "大学/训练期":
-        favorable.extend(["课程体系", "证书训练", "技术实践", "实习准备"])
-    if "金" in forces and forces["金"].get("effective_power", 0) >= 2:
-        favorable.extend(["结构化", "系统化", "工具化", "工程训练"])
-    if climate.get("preferred_elements"):
-        favorable.append("需要" + "、".join(climate["preferred_elements"]) + "来承载和成事")
-
-    weak = []
-    if "木" in forces and forces["木"].get("effective_power", 0) <= 0.8:
-        weak.append("纯资源开拓或人脉经营型不宜作为第一落点")
-    for conflict in remedy.get("conflicts", [])[:2]:
-        weak.append(conflict)
-
-    constraints = [
-        "现实专业/行业只能作为抽象画像在当代语境下的归纳，不可写成五行或十神的等号映射。",
-        "如果知识库象义与命盘作用关系不能同时支持某个现实落点，应降为待核验或不输出。",
+def _direction_profile(payload: dict, main: dict, secondary: dict, runtime: dict) -> dict:
+    policy = runtime.get("direction_profile") or {}
+    context = _context_frame(payload, runtime)
+    facts = {
+        **payload,
+        "context_frame": context,
+        "main_image": main,
+        "secondary_image": secondary,
+    }
+    favorable = [
+        format_template(value, facts)
+        for rule in policy.get("favorable_rules") or []
+        if matches(rule.get("when"), facts)
+        for value in rule.get("values") or []
     ]
+    weak = [
+        format_template(value, facts)
+        for rule in policy.get("weak_rules") or []
+        if matches(rule.get("when"), facts)
+        for value in rule.get("values") or []
+    ]
+    for source in policy.get("weak_value_sources") or []:
+        values = get_path(facts, source.get("path", ""), []) or []
+        weak.extend(str(value) for value in values[: int(number(source.get("limit")))])
+
+    constraints = list(policy.get("constraints") or [])
     if main.get("domain"):
-        constraints.append(f"主象领域先收敛为{main['domain']}，再结合知识库象义归纳现实落点。")
+        constraints.append(format_template(policy.get("main_constraint_template", ""), facts))
     if secondary.get("domain"):
-        constraints.append(f"次象领域仅作辅助：{secondary['domain']}。")
+        constraints.append(format_template(policy.get("secondary_constraint_template", ""), facts))
 
     return {
         "favorable_modes": list(dict.fromkeys(favorable)),

@@ -7,12 +7,37 @@ from ..core.knowledge import read_knowledge_json, relative_source, resolve_knowl
 SYMBOLIC_LAYERS_SOURCE = Path("structured/bazi_symbolic_layers.json")
 TOPIC_SOURCE = Path("topics/八字.md")
 
+REQUIRED_SYMBOLIC_SECTIONS = (
+    "traditional_symbols",
+    "middle_images",
+    "modern_landing_rules",
+    "imagery_runtime",
+    "discipline_runtime",
+)
+
+
+def load_bazi_symbolic_layers() -> tuple[dict, str, str]:
+    location = resolve_knowledge_location()
+    source = relative_source(location.root / SYMBOLIC_LAYERS_SOURCE, location.root)
+    if location.status != "available":
+        return {}, location.status, source
+    data, status = read_knowledge_json(location.root / SYMBOLIC_LAYERS_SOURCE)
+    if status != "available":
+        return {}, status, source
+    if not _valid_symbolic_layers(data):
+        return {}, "invalid", source
+    return data, status, source
+
+
+def _valid_symbolic_layers(data: dict) -> bool:
+    if data.get("schema_version") != 2:
+        return False
+    return all(key in data and isinstance(data[key], (dict, list)) for key in REQUIRED_SYMBOLIC_SECTIONS)
+
 
 def build_bazi_knowledge_context() -> dict:
     location = resolve_knowledge_location()
-    symbolic_status: str = location.status
-    if location.status == "available":
-        _, symbolic_status = read_knowledge_json(location.root / SYMBOLIC_LAYERS_SOURCE)
+    _, symbolic_status, _ = load_bazi_symbolic_layers()
     return {
         "availability": {
             "status": symbolic_status,

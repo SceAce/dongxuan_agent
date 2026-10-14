@@ -268,8 +268,10 @@ def build_plate_preview(
     ]
     lesson_rows = []
     for lesson in four_lessons:
+        # Heavenly officers are mounted on the earth palace carrying the
+        # lesson's upper heavenly branch, i.e. ``lower_branch``.
         lower_officer = heavenly_officers.get(lesson.lower, {}).get("name") if lesson.lower in heavenly_officers else None
-        upper_officer = heavenly_officers.get(lesson.upper, {}).get("name") if lesson.upper in heavenly_officers else None
+        upper_officer = heavenly_officers.get(lesson.lower_branch, {}).get("name")
         lesson_rows.append(
             {
                 "name": lesson.name,

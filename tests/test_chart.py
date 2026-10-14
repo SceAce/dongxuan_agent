@@ -43,6 +43,14 @@ def test_four_lessons_use_day_stem_lodging_palace():
     ]
 
 
+def test_plate_preview_uses_the_lesson_upper_branch_mount_for_officer():
+    chart = build_chart("2026-08-06 16:41:47", timezone="Asia/Shanghai")
+
+    preview_lessons = chart.to_dict()["plate_preview"]["four_lessons"]
+    for lesson, preview in zip(chart.four_lessons, preview_lessons, strict=True):
+        assert preview["upper_officer"] == chart.heavenly_officers[lesson.lower_branch]["name"]
+
+
 def test_shehai_selects_deeper_candidate_for_current_chart():
     chart = build_chart("2026-05-25 23:43:24", timezone="Asia/Shanghai")
 

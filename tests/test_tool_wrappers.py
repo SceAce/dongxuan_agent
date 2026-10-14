@@ -25,7 +25,6 @@ print(callable(build_chart), callable(build_divination), DaliurenChart.__name__,
 
 def test_root_chart_wrappers_import_after_cli_package_move():
     assert importlib.import_module("tools_bazi_chart_wrapper").main
-    assert importlib.import_module("tools_liuyao_chart_wrapper").main
     assert importlib.import_module("tools_daliuren_chart_wrapper").main
 
 
@@ -35,8 +34,6 @@ def test_root_tool_wrappers_delegate_to_canonical_modules():
         "tools_bazi_session_wrapper": "tools.bazi.session_wrapper",
         "tools_daliuren_chart_wrapper": "tools.daliuren.chart_wrapper",
         "tools_daliuren_session_wrapper": "tools.daliuren.session_wrapper",
-        "tools_liuyao_chart_wrapper": "tools.liuyao.chart_wrapper",
-        "tools_liuyao_session_wrapper": "tools.liuyao.session_wrapper",
     }
 
     for root_module_name, canonical_module_name in mappings.items():
@@ -52,8 +49,6 @@ def test_root_tool_wrappers_do_not_inject_legacy_tool_path():
         "tools_bazi_session_wrapper.py",
         "tools_daliuren_chart_wrapper.py",
         "tools_daliuren_session_wrapper.py",
-        "tools_liuyao_chart_wrapper.py",
-        "tools_liuyao_session_wrapper.py",
     ]
 
     for wrapper_path in wrapper_paths:

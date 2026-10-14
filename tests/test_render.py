@@ -26,6 +26,10 @@ def test_render_chart_markdown_contains_required_sections():
     assert "贵人" in rendered
     assert "### 盘面结构" in rendered
     assert '"four_lessons"' in rendered
+    assert "（天将〔天官〕；格内为天盘/地盘）" in rendered
+    assert "（横列从右至左为一课、二课、三课、四课）" in rendered
+    assert "阴阳" in rendered
+    assert "（六亲、遁干、三传、天官均取简称；旬空遁干留空）" in rendered
     assert "| 课 | 下 | 下地盘 | 上 | 关系 | 天将 | 天官 | 六亲 |" in rendered
     assert "| 传 | 神 | 遁干 | 旺衰 | 天将 | 天官 | 六亲 |" in rendered
     assert "不确定项" in rendered
@@ -57,6 +61,10 @@ def test_render_chart_markdown_contains_xun_dun_and_season_state():
     assert "| 初传 | 辰 |  | 相 | 合 | 六合 | 父母 |" in rendered
     assert "| 中传 | 午 | 甲 | 旺 | 龙 | 青龙 | 官鬼 |" in rendered
     assert "旬首：甲午" in rendered
+    traditional = rendered.split("### 三传\n\n```text\n", 1)[1].split("```", 1)[0]
+    first_transmission = next(line for line in traditional.splitlines() if "初" in line)
+    assert "辰" in first_transmission
+    assert "甲" not in first_transmission
 
 
 def test_divination_render_and_json_include_querent_fields():
